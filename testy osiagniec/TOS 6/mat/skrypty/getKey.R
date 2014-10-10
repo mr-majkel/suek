@@ -1,3 +1,42 @@
+# Generuje z codebooka klucz wartości potrzebnych do rekodowania.
+# Używa następujących funkcji
+# pomocniczych: reformat(), getItems(), getValues().
+# 
+# Argumenty
+# cdbook    data.frame z codebookiem z weryfikatora. 
+# vars      string z zapytaniem do grep() lub wektor tekstowy z nazwami
+#           zmiennych.
+# open_key  wektor tekstowy określający wartości w bazie do zrekodowania, które
+#           mają nie być rekodowane na 0. Dotyczy tylko zadań nie określonych
+#           jako zamknięte (patrz Uwagi niżej). Domyślnie c("1", "2").
+# mcq_key   wektor określający wartości dla zadań zamkniętych, którym po 
+#           zrekodowaniu przypisać wartość 1, a nie 0. Liczba kodów musi
+#           zgadzać się z liczbą wykrytych zadań zamkniętych (patrz Uwagi
+#           niżej).
+# na_codes  wektor określający wartości w bazie, które mają być zrekodowane
+#           jako NA, a nie 0. Dotyczy wszystkich zmiennych określonych w vars.
+# 
+# Wartość
+# Lista o następujących elementach
+# items     wektor tekstowy z nazwami zmiennych pasujących do 'vars'.
+# values    lista wartości zdefiniowanych dla 'items'.
+# recodes   lista wartości, na które mają być zrekodowane 'values'.
+# open      wektor tekstowy z nazwami zmiennych określonych jako otwarte
+#           (tj. nie-zamknięte).
+# mcq       wektor tekstowy z nazwami zmiennych określonych jako zamknięte.
+# open_key  wykorzystany 'open_key'.
+# mcq_key   wykorzystany 'mcq_key' (o ile został podany).
+# 
+# Uwagi
+# 
+# W trakcie generowania klucza zakłada, że zmienne, które posiadają etykietę
+# dla wartości 4, są zadaniami zamkniętymi. Ważne, żeby nazwy zmiennych w
+# 'cdbook' były zdefiniowane w kolumnie 'Nazwa( zmiennej)', a etykiety wartości
+# w kolumnie 'Etykiety( wartości)'. Część nie w nawiasie stanowi zapytanie
+# odnajdujące odpowiednie kolumny. Wyrażenia 'Nazwa' oraz 'Etykiety' muszą więc
+# identyfikować dokładnie po jednej zmiennej (patrz reformat()).
+# Zakłada, że wartości są oddzielone od swoich etykiet za pomocą dwukropka ':',
+# patrz getValues().
 getKey = function(cdbook, vars, open_key = c("1", "2"), mcq_key,
                   na_codes) {
     # wczytanie codebooka
@@ -56,8 +95,8 @@ getKey = function(cdbook, vars, open_key = c("1", "2"), mcq_key,
                 ") ", "nie zgadza sie z wykryta ich liczba (",
                 length(items_c),")!", sep = "", fill = TRUE)
             cat("Zadaniom zamknietym nie przypisano kodow.", fill = TRUE)          
-        } else {
-            names(mcq_key) = items_c
+        #} else {
+        #    names(mcq_key) = items_c
         }
         return_list[["mcq_key"]] = mcq_key
     }
