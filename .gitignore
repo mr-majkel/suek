@@ -1,4 +1,10 @@
-.Rproj.user
-.Rhistory
-.RData
-!*.R
+#
+*.Rproj.user
+*.Rhistory
+*.RData
+*.bak
+*.png
+*.csv
+*.dat
+*.pdf
+*.sav
