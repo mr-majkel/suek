@@ -23,6 +23,10 @@ mat_b = read.csv2("bazy oryg\\SUEK7_TOS6 Matematyka B.csv")
 code_mat_a = read.csv2("bazy oryg\\SUEK7_TOS6 Matematyka A popr20140808.csv")
 code_mat_b = read.csv2("bazy oryg\\SUEK7_TOS6 Matematyka B popr20140808.csv")
 
+# dodanie zmiennej na określenie wersji
+mat_a$wersja = "A"
+mat_b$wersja = "B"
+
 # poprawne kody do zadań zamkniętych
 # wersja A
 key_a = c(2,4,3,1,3,1,3,3,3,2,3,1,3,2,3,3,2)
@@ -52,7 +56,9 @@ write.csv2(mat_a_r, "bazy zmien\\tos6_mat_a_rek.csv", row.names = FALSE)
 write.csv2(mat_b_r, "bazy zmien\\tos6_mat_b_rek.csv", row.names = FALSE)
 
 # połączenie baz dla dwóch wersji 
+mat_all = merge(mat_a, mat_b, all = TRUE)
 mat_all_r = merge(mat_a_r, mat_b_r, all = TRUE)
 
 # zapisanie połączonych baz
+write.csv2(mat_all, "bazy zmien\\tos6_mat.csv", row.names = FALSE)
 write.csv2(mat_all_r, "bazy zmien\\tos6_mat_rek.csv", row.names = FALSE)
