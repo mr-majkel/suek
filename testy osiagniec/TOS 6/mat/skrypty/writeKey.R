@@ -1,3 +1,11 @@
+# Zapisuje listę z kluczem do pliku
+# Argumenty
+# key_list    lista z kluczem.
+# file        string z nazwą pliku docelowego.
+# append      boolean określający, czy klucz dopisać na końcu pliku. Domyślnie
+#             FALSE.
+# Uwagi
+# Wykorzystuje funkcję writeKeySingle() do zapisu poszczególnych zmiennych.
 writeKey = function(key_list, file = "", append = FALSE) {
     if (!append) {
         cat("", sep = "", file = file, append = FALSE)

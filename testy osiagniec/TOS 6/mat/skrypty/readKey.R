@@ -1,17 +1,42 @@
+# Wczytuje plik ze zdefiniowanym kluczem
+# Argumenty
+# file    string wskazuj膮cy plik .csv z kluczem.
+# 
+# Warto艣膰
+# Lista o nast臋puj膮cych elementach
+# items     wektor tekstowy z nazwami zmiennych pasuj膮cych do 'vars'.
+# values    lista warto艣ci zdefiniowanych dla 'items'.
+# recodes   lista warto艣ci, na kt贸re maj膮 by膰 zrekodowane 'values'.
+# open      wektor tekstowy z nazwami zmiennych okre艣lonych jako otwarte
+#           (tj. nie-zamkni臋te).
+# mcq       wektor tekstowy z nazwami zmiennych okre艣lonych jako zamkni臋te.
+# 
+# Uwagi
+# Plik .csv powinien opisywa膰 zmienne do zrekodowania w nast臋puj膮cy spos贸b:
+# nazwa_zmiennej; ["mcq"]
+# values; recodes
+# [w kolejnych liniach warto艣ci zmiennej i odpowiadaj膮ce im warto艣ci do
+# zrekodowania oddzielone 艣rednikiem (';')]
+# pusta_linia
 readKey = function(file) {
+    # funkcja pomocnicza do wyci膮gania element贸w rozdzielonych 艣rednikiem
     separate = function(x, ind) {
         y = strsplit(x, ";")
         y = unlist(lapply(y, "[", ind))
         return(y)
     }
+    # wczytanie pliku
     raw_file = readLines(con = file)
+    # liczba linii w pliku
     n_lines = length(raw_file)
-    
+    # liczba pustych linii w pliku
     empty_lines = which(raw_file == "")
     n_empty_lines = length(empty_lines)
+    # okre艣lenie indeks贸w z nazwami 'item贸w'
     item_lines = c(1, empty_lines[1:(n_empty_lines - 1)] + 1)
-    
+    # wy艂owienie nazw item贸w
     items = raw_file[item_lines]
+    # okre艣lenie item贸w zamkni臋tych
     mcq_bool = grepl(";", items)
     items_c = NULL
     
@@ -19,6 +44,7 @@ readKey = function(file) {
         items = separate(items, 1)
         items_c = items[mcq_bool]
     }
+    # lista z warto艣ciami
     key_list = list()
     for (it in items) {
         item_index = which(items == it)
@@ -26,31 +52,32 @@ readKey = function(file) {
         end_key = empty_lines[item_index] - 1
         key_list[[it]] = raw_file[begin_key:end_key]
     }
-
+    # wy艂onienie 'values' i 'recodes'
     values = lapply(key_list, separate, 1)
     recodes = lapply(key_list, separate, 2)
+    # wy艂onienie zada艅 otwartych
     items_o = items[!mcq_bool]
     
-    # tworzenie listy obiekt體
+    # tworzenie listy obiekt贸w
     return_list = list()
     # nazwy zmiennych
     return_list[["items"]] = items
-    # warto渃i zmiennych
+    # warto艣ci zmiennych
     return_list[["values"]] = values
-    # rekodowane warto渃i
+    # rekodowane warto艣ci
     return_list[["recodes"]] = recodes
     # zadania otwarte
     return_list[["open"]] = items_o
-    # zadania zamkni阾e
+    # zadania zamkni臋te
     return_list[["mcq"]] = items_c
     # # kody otwarte
     # return_list[["open_key"]] = open_key
-    # # kody zamkni阾e
+    # # kody zamkni臋te
     # if (!missing(mcq_key)){
         # names(mcq_key) = items_c
         # return_list[["mcq_key"]] = mcq_key
     # }
-    # # warto渃i brak體 danych
+    # # warto艣ci brak贸w danych
     # if (!missing(na_codes)) {
         # return_list[["na_codes"]] = na_codes
     # }

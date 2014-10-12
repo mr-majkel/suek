@@ -1,4 +1,11 @@
-# zapisuje do pliku
+# Zapisuje do pliku opis pojedynczej zmiennej.
+# Argumenty
+# name    string z nazwą zmiennej.
+# values  wektor tekstowy z wartościami do zrekodowania.
+# recodes wektor tekstowy z wartościami docelowymi.
+# mcq     boolean określający, czy zmienna jest zadaniem zamkniętym. Domyślnie
+#         FALSE.
+# file    string z nazwą pliku docelowego.
 writeKeySingle = function(name, values, recodes, mcq = FALSE, file = "") {
     if (mcq){
         name = paste(c(name, "mcq"), collapse = ";")
