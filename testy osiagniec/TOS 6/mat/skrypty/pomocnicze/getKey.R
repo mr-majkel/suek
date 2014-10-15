@@ -3,7 +3,7 @@
 # pomocniczych: reformat(), getItems(), getValues().
 # 
 # Użycie
-# getKey(cdbook, vars, open_key = c("1", "2"), mcq_key, na_codes)
+# getKey(cdbook, vars, open_key = c("1", "2"), mcq_key = NULL, na_codes = NULL)
 #
 # Argumenty
 # cdbook    data.frame z codebookiem z weryfikatora. 
