@@ -35,14 +35,14 @@ options("stringsAsFactors" = FALSE)
 # zapisane są funkcje pomocne w rekodowaniu. W związku z tym, że są to funkcje
 # zdefiniowane przez użytkownika (a nie w pakiecie) nie działa na nich funkcja
 # 'help()'. Jak używać poszczególnych funkcji opsiane jest w samych plikach.
-source("skrypty\\getKey.R")
-source("skrypty\\reformat.R")
-source("skrypty\\getItems.R")
-source("skrypty\\getValues.R")
-source("skrypty\\writeKeySingle.R")
-source("skrypty\\writeKey.R")
-source("skrypty\\readKey.R")
-source("skrypty\\recode.R")
+source("skrypty\\pomocnicze\\getKey.R")
+source("skrypty\\pomocnicze\\reformat.R")
+source("skrypty\\pomocnicze\\getItems.R")
+source("skrypty\\pomocnicze\\getValues.R")
+source("skrypty\\pomocnicze\\writeKeySingle.R")
+source("skrypty\\pomocnicze\\writeKey.R")
+source("skrypty\\pomocnicze\\readKey.R")
+source("skrypty\\pomocnicze\\recode.R")
 
 # wczytanie baz
 # R potrafi wczytać pliki w większości formatów z różnych pakietów
@@ -56,6 +56,10 @@ mat_b = read.csv2("bazy oryg\\SUEK7_TOS6 Matematyka B.csv")
 # Są potrzebne do funkcji tworzenia klucza do rekodowania
 code_mat_a = read.csv2("bazy oryg\\SUEK7_TOS6 Matematyka A popr20140808.csv")
 code_mat_b = read.csv2("bazy oryg\\SUEK7_TOS6 Matematyka B popr20140808.csv")
+
+# dodanie zmiennej na określenie wersji
+mat_a$wersja = "A"
+mat_b$wersja = "B"
 
 # poprawne kody do zadań zamkniętych
 # Są potrzebne do funkcji tworzenia klucza do rekodowania
@@ -102,9 +106,11 @@ write.csv2(mat_b_r, "bazy zmien\\tos6_mat_b_rek.csv", row.names = FALSE)
 
 # połączenie baz dla dwóch wersji
 # Do połączenia dwóch data.frame'ów używamy funkcji merge().
+mat_all = merge(mat_a, mat_b, all = TRUE)
 mat_all_r = merge(mat_a_r, mat_b_r, all = TRUE)
 
 # zapisanie połączonych baz
+write.csv2(mat_all, "bazy zmien\\tos6_mat.csv", row.names = FALSE)
 write.csv2(mat_all_r, "bazy zmien\\tos6_mat_rek.csv", row.names = FALSE)
 
 # w następnej części analizy!!!

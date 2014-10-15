@@ -1,27 +1,32 @@
 # ścieżka, opcje, biblioteki
 
-setwd(paste0("C:\\Users\\Uzytkownik\\Documents\\SUEK\\",
-             "Projects\\suek\\testy osiagniec\\TOS 6\\mat"))
+setwd("C:\\Users\\Uzytkownik\\Dropbox\\szkolenie R\\analizy TAM\\mat")
 wd = getwd()
 
 options("stringsAsFactors" = FALSE)
 
-source("skrypty\\getKey.R")
-source("skrypty\\reformat.R")
-source("skrypty\\getItems.R")
-source("skrypty\\getValues.R")
-source("skrypty\\writeKeySingle.R")
-source("skrypty\\writeKey.R")
-source("skrypty\\readKey.R")
-source("skrypty\\recode.R")
+source("skrypty\\pomocnicze\\getKey.R")
+source("skrypty\\pomocnicze\\reformat.R")
+source("skrypty\\pomocnicze\\getItems.R")
+source("skrypty\\pomocnicze\\getValues.R")
+source("skrypty\\pomocnicze\\writeKeySingle.R")
+source("skrypty\\pomocnicze\\writeKey.R")
+source("skrypty\\pomocnicze\\readKey.R")
+source("skrypty\\pomocnicze\\recode.R")
 
 # wczytanie baz
-mat_a = read.csv2("bazy oryg\\SUEK7_TOS6 Matematyka A.csv")
-mat_b = read.csv2("bazy oryg\\SUEK7_TOS6 Matematyka B.csv")
+mat_a = read.csv2("bazy oryg\\SUEK7_TOS6 Matematyka A zasadniczeDane.csv")
+mat_b = read.csv2("bazy oryg\\SUEK7_TOS6 Matematyka B zasadniczeDane.csv")
+
+summary(mat_a)
+head(mat_a)
 
 # wczytanie codebooków
-code_mat_a = read.csv2("bazy oryg\\SUEK7_TOS6 Matematyka A popr20140808.csv")
-code_mat_b = read.csv2("bazy oryg\\SUEK7_TOS6 Matematyka B popr20140808.csv")
+code_mat_a = read.csv2("bazy oryg\\SUEK7_TOS6 Matematyka A zasadniczeCodebook.csv")
+code_mat_b = read.csv2("bazy oryg\\SUEK7_TOS6 Matematyka B zasadniczeCodebook.csv")
+
+summary(code_mat_a)
+head(code_mat_a)
 
 # dodanie zmiennej na określenie wersji
 mat_a$wersja = "A"
@@ -30,26 +35,30 @@ mat_b$wersja = "B"
 # poprawne kody do zadań zamkniętych
 # wersja A
 key_a = c(2,4,3,1,3,1,3,3,3,2,3,1,3,2,3,3,2)
-# wersja B - todo
+# wersja B
 key_b = c(3,4,3,4,3,3,2,2,3,2,2,3,1,3,4,3,2)
 
 # stworzenie klucza do rekodowania
 # wersja A
 key_mat_a = getKey(code_mat_a, "MA", c("1","2"), key_a)
-# wersja B - todo
+# wersja B
 key_mat_b = getKey(code_mat_b, "MB", c("1","2"), key_b)
 
 # zapisanie klucza
-writeKey(key_mat_a, "bazy zmien\\klucz.csv")
+writeKey(key_mat_a, "bazy zmien\\klucz_A.csv")
 writeKey(key_mat_b, "bazy zmien\\klucz_B.csv")
 
 # wczytanie klucza
-key_mat_a = readKey("bazy zmien\\klucz.csv")
+key_mat_a = readKey("bazy zmien\\klucz_A.csv")
 key_mat_b = readKey("bazy zmien\\klucz_B.csv")
 
 # zrekodowanie bazy surowej
 mat_a_r = recode(mat_a, key_mat_a)
 mat_b_r = recode(mat_b, key_mat_b)
+
+summary(mat_a_r)
+head(mat_a_r)
+head(mat_a)
 
 # zapisanie bazy rekodowanej
 write.csv2(mat_a_r, "bazy zmien\\tos6_mat_a_rek.csv", row.names = FALSE)
