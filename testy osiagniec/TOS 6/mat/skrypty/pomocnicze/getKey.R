@@ -2,6 +2,9 @@
 # Używa następujących funkcji
 # pomocniczych: reformat(), getItems(), getValues().
 # 
+# Użycie
+# getKey(cdbook, vars, open_key = c("1", "2"), mcq_key, na_codes)
+#
 # Argumenty
 # cdbook    data.frame z codebookiem z weryfikatora. 
 # vars      string z zapytaniem do grep() lub wektor tekstowy z nazwami
@@ -37,8 +40,8 @@
 # identyfikować dokładnie po jednej zmiennej (patrz reformat()).
 # Zakłada, że wartości są oddzielone od swoich etykiet za pomocą dwukropka ':',
 # patrz getValues().
-getKey = function(cdbook, vars, open_key = c("1", "2"), mcq_key,
-                  na_codes) {
+getKey = function(cdbook, vars, open_key = c("1", "2"), mcq_key = NULL,
+                  na_codes = NULL) {
     # wczytanie codebooka
     cdbook = reformat(cdbook)
     # nazwy itemów
@@ -61,13 +64,15 @@ getKey = function(cdbook, vars, open_key = c("1", "2"), mcq_key,
         if (it %in% items_o) {
             open_index = match(open_key[open_key %in% it_vals], it_vals)
             key_list[[it]][open_index] = open_key[open_key %in% it_vals]
-        } else if (!missing(mcq_key)){
+        # i dla zamkniętych
+        } else if (!is.null(mcq_key)){
             if (length(mcq_key) == length(items_c)) {
                 mcq_index = which(items_c == it)
                 key_list[[it]][match(mcq_key[mcq_index], it_vals)] = 1
             }
         }
-        if (!missing(na_codes)) {
+        # recodes dla braków danych
+        if (!is.null(na_codes)) {
             na_index = match(na_codes, it_vals)
             key_list[[it]][na_index] = NA
         }
@@ -89,7 +94,7 @@ getKey = function(cdbook, vars, open_key = c("1", "2"), mcq_key,
     # kody otwarte
     return_list[["open_key"]] = open_key
     # kody zamknięte
-    if (!missing(mcq_key)){
+    if (!is.null(mcq_key)){
         if (length(mcq_key) != length(items_c)) {
             cat("Liczba kodow do zadan zamknietych (", length(mcq_key),
                 ") ", "nie zgadza sie z wykryta ich liczba (",
@@ -101,7 +106,7 @@ getKey = function(cdbook, vars, open_key = c("1", "2"), mcq_key,
         return_list[["mcq_key"]] = mcq_key
     }
     # wartości braków danych
-    if (!missing(na_codes)) {
+    if (!is.null(na_codes)) {
         return_list[["na_codes"]] = na_codes
     }
     return(return_list)
