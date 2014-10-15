@@ -1,10 +1,12 @@
 # ścieżka, opcje, biblioteki
 
-setwd("C:\\Users\\Uzytkownik\\Dropbox\\szkolenie R\\analizy TAM\\mat")
+setwd(paste0("C:\\Users\\Uzytkownik\\Documents\\SUEK\\",
+             "Projects\\suek\\testy osiagniec\\TOS 6\\mat"))
 wd = getwd()
 
 options("stringsAsFactors" = FALSE)
 
+# wczytanie funkcji pomocniczych
 source("skrypty\\pomocnicze\\getKey.R")
 source("skrypty\\pomocnicze\\reformat.R")
 source("skrypty\\pomocnicze\\getItems.R")
@@ -18,15 +20,11 @@ source("skrypty\\pomocnicze\\recode.R")
 mat_a = read.csv2("bazy oryg\\SUEK7_TOS6 Matematyka A zasadniczeDane.csv")
 mat_b = read.csv2("bazy oryg\\SUEK7_TOS6 Matematyka B zasadniczeDane.csv")
 
-summary(mat_a)
-head(mat_a)
-
 # wczytanie codebooków
-code_mat_a = read.csv2("bazy oryg\\SUEK7_TOS6 Matematyka A zasadniczeCodebook.csv")
-code_mat_b = read.csv2("bazy oryg\\SUEK7_TOS6 Matematyka B zasadniczeCodebook.csv")
-
-summary(code_mat_a)
-head(code_mat_a)
+code_mat_a = read.csv2(paste0("bazy oryg\\",
+                              "SUEK7_TOS6 Matematyka A zasadniczeCodebook.csv"))
+code_mat_b = read.csv2(paste0("bazy oryg\\",
+                              "SUEK7_TOS6 Matematyka B zasadniczeCodebook.csv"))
 
 # dodanie zmiennej na określenie wersji
 mat_a$wersja = "A"
@@ -56,17 +54,16 @@ key_mat_b = readKey("bazy zmien\\klucz_B.csv")
 mat_a_r = recode(mat_a, key_mat_a)
 mat_b_r = recode(mat_b, key_mat_b)
 
-summary(mat_a_r)
-head(mat_a_r)
-head(mat_a)
-
-# zapisanie bazy rekodowanej
-write.csv2(mat_a_r, "bazy zmien\\tos6_mat_a_rek.csv", row.names = FALSE)
-write.csv2(mat_b_r, "bazy zmien\\tos6_mat_b_rek.csv", row.names = FALSE)
+# zapisanie baz rekodowanych
+# write.csv2(mat_a_r, "bazy zmien\\tos6_mat_a_rek.csv", row.names = FALSE)
+# write.csv2(mat_b_r, "bazy zmien\\tos6_mat_b_rek.csv", row.names = FALSE)
 
 # połączenie baz dla dwóch wersji 
 mat_all = merge(mat_a, mat_b, all = TRUE)
 mat_all_r = merge(mat_a_r, mat_b_r, all = TRUE)
+
+# sprawdzenie występowania dubli na ID_ucz
+any(duplicated(mat_all$ID_ucz))
 
 # zapisanie połączonych baz
 write.csv2(mat_all, "bazy zmien\\tos6_mat.csv", row.names = FALSE)
