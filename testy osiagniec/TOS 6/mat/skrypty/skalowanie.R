@@ -290,6 +290,10 @@ tam.se(mod2)
 #                      MB_3.
 # na korzyść dziewczynek: KMA_10, KMA_14, KMA_16, KMA_6, KMA_9, MA_17, MA_2,
 #                         MA_21, MA_3, MB_1, MB_15, MB_2, MB_20.
+dif_items = c("KMA_15", "KMA_8", "MA_1", "MA_7", "MB_10", "MB_11", "MB_21",
+                  "MB_25", "MB_3", "KMA_10", "KMA_14", "KMA_16", "KMA_6",
+                  "KMA_9", "MA_17", "MA_2", "MA_21", "MA_3", "MB_1", "MB_15",
+                  "MB_2", "MB_20")
 
 # pv dla modelu w pełni inwariantnego
 mod2a_pv = tam.pv(mod2a)$pv
@@ -306,26 +310,54 @@ for (it in items1) {
   print(out, digits = 3)
 }  
 
-# analia na podstawie przykładu w helpie
+# analia na podstawie przykładu 16 w helpie do TAM
+# głównie chodzi o własnoręczne zapodanie macierzy A, odpowiadającej za design
+# pomiaru. W macierzy tej określamy jakie uogólnione ('genrelized') zadania
+# chcemy w modelowaniu uwzględnić. Takimi uogólnionymi zadaniami są oczywiście
+# zadania, progi, ale także aspekty (facets). W macierzy tej możemy zatem
+# określić, które zadania mają mieć wyliczony efekt DIF, a które nie. Możemy
+# zatem odejść od testowania modeli wszystko-albo-nic, na rzecz tych bardziej
+# wysublimowanych.
+
+# stworzenie macierzy potrzebnych do estymacji modelu z pełną wariantnością na
+# płeć.
 des2 = designMatrices.mfr2(resp = mat_all_r[, items1],
                             facets = mat_all_r[, "kobieta", drop = FALSE],
                             formula = ~item + item:step + kobieta +
                                        item:kobieta)
+
+# wyciągnięcie przetworzonej bazy danych
 resp2 = des2$gresp$gresp.noStep
+
+# macierz A
 A = des2$A$A.3d
+
+# parametry nieestymowalne (np. step 2, dla zadań kodowanych 0-1)
 xsi.elim = des2$xsi.elim
-dif_items = c(paste0("MA_", c(1,2,21,17,7)), paste0("KMA_", c(8,10,14,6,9,15,16)),
-              paste0("MB_", c(10,3,5,2,21,11,15,25,20)))
+
+# określenie indeksów uogólnionych zadań bez difa na płeć
 xsi.elim.hand = paste0(items1[!(items1 %in% dif_items)],":kobieta")
 xsi.elim.hand.ind = grep(paste(xsi.elim.hand, collapse = "|"), dimnames(A)[[3]])
-A1 = A[, , -c(xsi.elim[, 2],xsi.elim.hand.ind)]
+
+# przygotowanie macierzy A do testowania modelu z zafiksowanymi prametrami zadań
+# bez difa na płeć
+A1 = A[, , -c(xsi.elim[, 2], xsi.elim.hand.ind)]
+
+# Macierz B (określa punktowanie kategorii zostawiamy jak jest)
 B = des2$B$B.3d
+
+# model z częściowo inwariantnymi zadaniami, różną średnią
 mod3 = tam.mml(resp2, A= A1, B = B, control = list(QMC = FALSE,
-                                                increment.factor=1.03,
-                                                fac.oldxsi=.2))
+                                                   increment.factor=1.03,
+                                                   fac.oldxsi=.2))
+# wykres z deviance
 windows()
-plotDevianceTAM(mod2)
+plotDevianceTAM(mod3)
+
+# zapisanie podsumowania modelu do pliku
 summary(mod3, "bazy zmien\\mod3")
+
+
 xsi1 = mod3$xsi
 difxsi = xsi1[intersect(grep("kobieta", rownames(xsi1)),
                         grep("MA_10", rownames(xsi1))), ]
