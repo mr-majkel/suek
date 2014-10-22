@@ -8,4 +8,5 @@
 *.dat
 *.pdf
 *.sav
+*.Rout
 .Rproj.user
