@@ -9,7 +9,7 @@ library(TAM)
 library(sirt)
 library(mirt)
 library(WrightMap)
-
+source("skrypty\\pomocnicze\\difWang.R")
 # funkcja do kopiowania zmiennych kotwiczących
 # df - data.frame
 # anchor_mat - macierz dwukolumnowa z informacją o kotwiczących zadaniach
@@ -158,10 +158,18 @@ items_kotw = paste0("K", kotw[, 1])
 # policzenie modelu multi-faceted rasch, pełna wariantność parametrów
 mod1 = tam.mml.mfr(mat_all_r[, items_kotw],
                    facets = mat_all_r[, "wersja", drop = FALSE],
+                   formulaA = ~ item + item:step + wersja + wersja:item + wersja:item:step,
+                   control = list(QMC = FALSE,
+                                  increment.factor=1.03,
+                                  fac.oldxsi=.2))
+# policzenie modelu multi-faceted rasch, pełna wariantność parametrów
+mod1aa = tam.mml.mfr(mat_all_r[, items_kotw],
+                   facets = mat_all_r[, "wersja", drop = FALSE],
                    formulaA = ~ item + item:step + wersja + wersja:item,
                    control = list(QMC = FALSE,
                                   increment.factor=1.03,
                                   fac.oldxsi=.2))
+an11 = anova(mod1, mod1aa)
 # sprawdzenie deviance
 windows()
 plotDevianceTAM(mod1)
@@ -250,11 +258,11 @@ mod2 = tam.mml.mfr(mat_all_r[, items1],
                                   fac.oldxsi=.2))
 # model w pełni inwariantny
 mod2a = tam.mml.mfr(mat_all_r[, items1],
-                   facets = mat_all_r[, "kobieta", drop = FALSE],
+                   #facets = mat_all_r[, "kobieta", drop = FALSE],
                    formulaA = ~ item + item:step,
-                   control = list(QMC = FALSE,
-                                  increment.factor=1.03,
-                                  fac.oldxsi=.2))
+                   control = list(QMC = TRUE,
+                                  increment.factor=1.02,
+                                  fac.oldxsi=.1))
 
 # model w pełni inwariantny, różne średnie
 mod2b = tam.mml.mfr(mat_all_r[, items1],
@@ -291,9 +299,9 @@ tam.se(mod2)
 # na korzyść dziewczynek: KMA_10, KMA_14, KMA_16, KMA_6, KMA_9, MA_17, MA_2,
 #                         MA_21, MA_3, MB_1, MB_15, MB_2, MB_20.
 dif_items = c("KMA_15", "KMA_8", "MA_1", "MA_7", "MB_10", "MB_11", "MB_21",
-                  "MB_25", "MB_3", "KMA_10", "KMA_14", "KMA_16", "KMA_6",
-                  "KMA_9", "MA_17", "MA_2", "MA_21", "MA_3", "MB_1", "MB_15",
-                  "MB_2", "MB_20")
+              "MB_25", "MB_3", # chłopcy
+              "KMA_10", "KMA_14", "KMA_16", "KMA_6", "KMA_9", "MA_17", "MA_2",
+              "MA_21", "MA_3", "MB_1", "MB_15", "MB_2", "MB_20") # dziewczynki
 
 # pv dla modelu w pełni inwariantnego
 mod2a_pv = tam.pv(mod2a)$pv
@@ -331,7 +339,7 @@ resp2 = des2$gresp$gresp.noStep
 
 # macierz A
 A = des2$A$A.3d
-
+dimnames(A)[[3]]
 # parametry nieestymowalne (np. step 2, dla zadań kodowanych 0-1)
 xsi.elim = des2$xsi.elim
 
@@ -343,111 +351,51 @@ xsi.elim.hand.ind = grep(paste(xsi.elim.hand, collapse = "|"), dimnames(A)[[3]])
 # bez difa na płeć
 A1 = A[, , -c(xsi.elim[, 2], xsi.elim.hand.ind)]
 
-# Macierz B (określa punktowanie kategorii zostawiamy jak jest)
+# Macierz B (określa punktowanie kategorii, zostawiamy jak jest)
 B = des2$B$B.3d
 
 # model z częściowo inwariantnymi zadaniami, różną średnią
 mod3 = tam.mml(resp2, A= A1, B = B, control = list(QMC = FALSE,
-                                                   increment.factor=1.03,
+                                                   increment.factor=1.01,
                                                    fac.oldxsi=.2))
 # wykres z deviance
 windows()
 plotDevianceTAM(mod3)
 
 # zapisanie podsumowania modelu do pliku
-summary(mod3, "bazy zmien\\mod3")
+summary(mod3, "modele\\mod3")
 
-
-xsi1 = mod3$xsi
-difxsi = xsi1[intersect(grep("kobieta", rownames(xsi1)),
-                        grep("MA_10", rownames(xsi1))), ]
-
+# wycięcie dodatkowo efektu trudności dla płci (różnicy w średnich)
 A1a = A1[, ,-grep("^kobieta", dimnames(A1)[[3]])]
+
+# model mfr częściowo inwariantny z regresją latentną na płeć
 mod3a = tam.mml(resp2, formulaY = ~ kobieta,
                 dataY = mat_all_r[, "kobieta", drop = FALSE],
                 A= A1a, B = B,
                 control = list(QMC = FALSE, 
-                               increment.factor=1.03,
+                               increment.factor=1.01,
                                fac.oldxsi=.2))
-summary(mod3a, "bazy zmien\\mod3a")
+# zapisanie podsumowania modelu
+summary(mod3a, "modele\\mod3a")
 
+## model mfr częściowo inwariantny multi-group ze względu na płeć
 mod3b = tam.mml(resp2, group = mat_all_r[, "kobieta"],
                 A= A1a, B = B,
                 control = list(QMC = FALSE, 
-                               increment.factor=1.03,
+                               increment.factor=1.01,
                                fac.oldxsi=.2))
-tam.se(mod3b)
-summary(mod3b, "bazy zmien\\mod3b")
+# zapisanie podsumowania modelu
+summary(mod3b, "modele\\mod3b")
 
-mod3c = tam.mml(mat_all_r[,items1[which(!items1%in%dif_items)]],
-                group = mat_all_r[, "kobieta"],
-                control = list(QMC = FALSE, 
-                               increment.factor=1.03,
-                               fac.oldxsi=.2))
+# oszacowanie istotności różnych wariancji w grupie chłopców i dziewczynek
+# działa w wersji >1.1
+anova(mod3a, mod3b)
 
-mod3d = tam.mml(mat_all_r[,items1[which(items1%in%dif_items)]],
-                group = mat_all_r[, "kobieta"],
-                control = list(QMC = FALSE, 
-                               increment.factor=1.03,
-                               fac.oldxsi=.2))
-### regresja latentna ########################
-
-
-rasch_plec_lat = tam(mat_all_r[, items1], irtmodel = "PCM",
-                     formulaY = ~ kobieta,
-                     dataY = mat_all_r[, "kobieta", drop = FALSE],
-                     pid = mat_all_r$ID_ucz,
-                     #variance.fixed = matrix(c(1, 1, 1), ncol = 3),
-                     control = list(QMC = FALSE))
-summary(rasch_plec_lat3)
-tam.se(rasch_plec_lat)$beta
-tam.se(rasch_plec_lat3)$beta
-
-### multi-group #####
-rasch_plec_grup = tam(mat_all_r[, items1], group = mat_all_r[, "kobieta"])
-rasch_plec_grup2 = tam(mat_all_r[, items1], group = mat_all_r[, "plec"])
-summary(rasch_plec_grup, "bazy zmien\\mgroup_num")
-summary(rasch_plec_grup2, "bazy zmien\\mgroup_lab")
-
-# multi-group z mfr
-mod4 = tam.mml.mfr(mat_all_r[, items1], group = mat_all_r[, "kobieta"],
-           facets = mat_all_r[, "kobieta", drop = FALSE],
-           formulaA = dif_plec_form,
-           control = list(QMC = FALSE,
-                          increment.factor=1.03,
-                          fac.oldxsi=.2))
-summary(mod4, "bazy zmien\\mod4")
-
-
-mod5 = tam.mml.mfr(mat_all_r[, items1], group = mat_all_r[, "kobieta"],
-                   facets = mat_all_r[, "kobieta", drop = FALSE],
-                   formulaA = ~ item + item:step + item:kobieta,
-                   control = list(QMC = FALSE,
-                                  increment.factor=1.03,
-                                  fac.oldxsi=.2))
-summary(mod5, "bazy zmien\\mod5")
-anova(mod4, rasch_plec_grup)
-
-mean(mod5$person[mat_all_r$plec == "K", "EAP"])
-mean(mod5$person[mat_all_r$plec == "M", "EAP"])
-
-
-# latentna z mfr
-mod6 = tam.mml.mfr(mat_all_r[, items1], formulaY = ~ kobieta,
-                   dataY = mat_all_r[, "kobieta", drop = FALSE],
-                   facets = mat_all_r[, "kobieta", drop = FALSE],
-                   formulaA = ~ item + item:step + item:kobieta,
-                   control = list(QMC = FALSE,
-                                  increment.factor=1.03,
-                                  fac.oldxsi=.2))
-mod6a = tam.mml.mfr(mat_all_r[, items1], formulaY = ~ kobieta,
-                   dataY = mat_all_r[, "kobieta", drop = FALSE],
-                   facets = mat_all_r[, "kobieta", drop = FALSE],
-                   formulaA = ~ item + item:step + item:kobieta,
-                   constrain = "items",
-                   control = list(QMC = FALSE,
-                                  increment.factor=1.03,
-                                  fac.oldxsi=.2))
-
-summary(mod6, "bazy zmien\\mod6")
-summary(mod6a, "bazy zmien\\mod6a")
+# analiza DIF metodą Wanga(2012) i Woods(2009)
+# na razie funkcja zwraca tylko tabelę z zestawieniem modeli
+mm = difWang(mat_all_r[, items1], dif_facet = "kobieta", round = 5,
+             facets = mat_all_r[, "kobieta", drop = FALSE],
+             formulaY = ~ kobieta, dataY = mat_all_r[, "kobieta", drop = FALSE],
+             control = list(QMC = FALSE, 
+                            increment.factor=1.01,
+                            fac.oldxsi=.2))
