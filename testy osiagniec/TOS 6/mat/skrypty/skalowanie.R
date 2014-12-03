@@ -9,29 +9,11 @@ library(TAM)
 library(sirt)
 library(mirt)
 library(WrightMap)
+library(xtable)
+library(plyr)
+
 source("skrypty\\pomocnicze\\difWang.R")
-# funkcja do kopiowania zmiennych kotwiczących
-# df - data.frame
-# anchor_mat - macierz dwukolumnowa z informacją o kotwiczących zadaniach
-anchor = function(df, anchor_mat) {
-  # pętla po wierszach, czyli koljenych parach zadań
-  for(i in 1:nrow(anchor_mat)) {
-    # nazwa zadania z wersji a
-    it_a = anchor_mat[i, 1]
-    # nazw zadania z wersji b
-    it_b = anchor_mat[i, 2]
-    # nazwa zmiennych kotwiczących
-    kit = paste0("K", it_a)
-    # indeksy uczniów z wersji A
-    ind_ucz_a = which(df$wersja == "A")
-    # indeksy uczniów z wersji B
-    ind_ucz_b = which(df$wersja == "B")
-    # wyciągnięcie odpowiednich wartości
-    df[ind_ucz_a, kit] = df[ind_ucz_a, it_a]
-    df[ind_ucz_b, kit] = df[ind_ucz_b, it_b]
-  }
-  return(df)
-}
+source("skrypty\\pomocnicze\\anchor.R")
 
 # wczytanie baz
 mat_all = read.csv2("bazy zmien\\tos6_mat.csv")
@@ -59,6 +41,7 @@ kotw = matrix(c("MA_4", "MB_4",
                 "MA_23", "MB_23",
                 "MA_24", "MB_24"), ncol = 2, byrow = TRUE)
 
+colnames(kotw) = c("wersja A", "wersja B")
 # stworzenie zmiennych kotwiczących w bazach
 mat_all[, paste0("K", kotw[, 1])] = NA
 mat_all_r[, paste0("K", kotw[, 1])] = NA
@@ -119,6 +102,8 @@ plot(mod0, items = 1:2, export = FALSE, ask = FALSE, overlay = TRUE)
 legend(1, 0.2, rownames(mod0$xsi)[1:2], lty = 1, lwd = 2,
        col = c("blue", "red"))
 
+# plot nie działa w wersji 1.2?
+
 # sprawdzenie dopasowania
 fit0 = tam.fit(mod0)
 
@@ -160,8 +145,8 @@ mod1 = tam.mml.mfr(mat_all_r[, items_kotw],
                    facets = mat_all_r[, "wersja", drop = FALSE],
                    formulaA = ~ item + item:step + wersja + wersja:item + wersja:item:step,
                    control = list(QMC = FALSE,
-                                  increment.factor=1.03,
-                                  fac.oldxsi=.2))
+                                  increment.factor=1.01,
+                                  fac.oldxsi=.05))
 # policzenie modelu multi-faceted rasch, pełna wariantność parametrów
 mod1aa = tam.mml.mfr(mat_all_r[, items_kotw],
                    facets = mat_all_r[, "wersja", drop = FALSE],

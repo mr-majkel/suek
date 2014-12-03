@@ -1,9 +1,9 @@
 ------------------------------------------------------------
-TAM 1.0-3.18-1 (2014-09-08) 
+TAM 1.2 (2014-11-22) 
 
-Date of Analysis: 2014-10-23 14:18:52 
-Time difference of 13.84179 secs
-Computation time: 13.84179 
+Date of Analysis: 2014-12-03 15:16:54 
+Time difference of 13.78279 secs
+Computation time: 13.78279 
 R version 3.1.1 (2014-07-10) i386, mingw32 | nodename = IBE-KOMPUTER | login = Uzytkownik 
 
 Multidimensional Item Response Model in TAM 
@@ -16,17 +16,17 @@ Numeric integration with 21 integration points
 Deviance =  165742.2  | Log Likelihood =  -82871.12 
 Number of persons =  5510 
 Number of items =  72 
-Number of estimated parameters =  62 
+Number of estimated parameters =  63 
     Item threshold parameters  =  60 
     Item slope parameters      =  0 
     Regression parameters      =  1 
-    (Co)Variance parameters    =  1 
+    (Co)Variance parameters    =  2 
 
-AIC  =  165866.2  | penalty = 124    | AIC = -2*LL + 2*p  
-AICc =  165867.7  | penalty = 125.43    | AICc = -2*LL + 2*p + 2*p*(p+1)/(n-p-1)  (bias corrected AIC)
-BIC  =  166276.3  | penalty = 534.09    | BIC = -2*LL + log(n)*p  
-aBIC  =  166079.3  | penalty = 337.03    | aBIC = -2*LL + log((n-2)/24)*p  (adjusted BIC) 
-CAIC =  166338.3  | penalty = 596.09   | CAIC = -2*LL + [log(n)+1]*p  (consistent AIC)
+AIC  =  165868.2  | penalty = 126    | AIC = -2*LL + 2*p  
+AICc =  165869.7  | penalty = 127.48    | AICc = -2*LL + 2*p + 2*p*(p+1)/(n-p-1)  (bias corrected AIC)
+BIC  =  166285  | penalty = 542.7    | BIC = -2*LL + log(n)*p  
+aBIC  =  166084.7  | penalty = 342.46    | aBIC = -2*LL + log((n-2)/24)*p  (adjusted BIC) 
+CAIC =  166348  | penalty = 605.7   | CAIC = -2*LL + [log(n)+1]*p  (consistent AIC)
 
 ------------------------------------------------------------
 EAP Reliability
