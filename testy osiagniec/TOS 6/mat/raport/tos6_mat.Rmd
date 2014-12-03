@@ -4,7 +4,23 @@ author: "Michał Modzelewski"
 date: "Wednesday, December 03, 2014"
 output: html_document
 ---
+``` {r include = FALSE, cache = TRUE}
+setwd(paste0("C:\\Users\\Uzytkownik\\Documents\\SUEK\\",
+             "Projects\\suek\\testy osiagniec\\TOS 6\\mat"))
+wd = getwd()
 
+options("stringsAsFactors" = FALSE)
+
+library(TAM)
+library(sirt)
+library(mirt)
+library(WrightMap)
+library(xtable)
+library(plyr)
+
+source("skrypty\\pomocnicze\\difWang.R")
+source("skrypty\\pomocnicze\\anchor.R")
+```
 # O teście
 
 Test umiejętności matematycznych TOS6 składa się z dwóch wersji (A i B), po 25 zadań każda. Część zadań, tzw. zadania kotwiczące, jest taka sama dla obu wersji. Poniżej znajduje się tabela informująca o tym, które zadania w wersji A odpowiadają zadaniom w wersji B.
@@ -54,18 +70,20 @@ mat_all = merge(mat_all, ucz_df, all.x = TRUE)
 mat_all_r = merge(mat_all_r, ucz_df, all.x = TRUE)
 ```
 
-
-# stworzenie zmiennych kotwiczących w bazach
+Stworzenie zmiennych kotwiczących w bazach i skopiowanie dla nich odpowienich wartości.
+```{r}
 mat_all[, paste0("K", kotw[, 1])] = NA
 mat_all_r[, paste0("K", kotw[, 1])] = NA
 
 # skopiowanie wartości dla zmiennych kotwiczących
 mat_all = anchor(mat_all, kotw)
 mat_all_r = anchor(mat_all_r, kotw)
+```
 
+```{r}
 # nazwy wszystkich itemów w bazie
 items_all = grep("MA|MB", names(mat_all_r), value = TRUE)
-
+```
 
 
 
