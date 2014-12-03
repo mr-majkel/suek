@@ -102,7 +102,7 @@ plotDevianceTAM(mod0a)
 head(mod0$person)
 
 # podejrzenie parametrów zadań
-rasch1$xsi
+mod0$xsi
 
 # wyrysowanie wykresów dla zadań
 # poniższa funkcja otwiera okno do rysowania wykresów
@@ -399,3 +399,4 @@ mm = difWang(mat_all_r[, items1], dif_facet = "kobieta", round = 5,
              control = list(QMC = FALSE, 
                             increment.factor=1.01,
                             fac.oldxsi=.2))
+write.csv2(mm, "bazy zmien\\modele_DIF.csv", row.names = FALSE)

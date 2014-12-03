@@ -1,0 +1,420 @@
+------------------------------------------------------------
+TAM 1.0-3.18-1 (2014-09-08) 
+
+Date of Analysis: 2014-10-22 11:20:53 
+Time difference of 16.90697 secs
+Computation time: 16.90697 
+R version 3.1.1 (2014-07-10) i386, mingw32 | nodename = IBE-KOMPUTER | login = Uzytkownik 
+
+Multidimensional Item Response Model in TAM 
+
+IRT Model 1PL 
+------------------------------------------------------------
+Number of iterations = 63 
+Numeric integration with 21 integration points
+
+Deviance =  165735.5  | Log Likelihood =  -82867.73 
+Number of persons =  5510 
+Number of generalized items =  72 
+Number of items =  36 
+Number of estimated parameters =  75 
+    Item threshold parameters  =  74 
+    Item slope parameters      =  0 
+    Regression parameters      =  0 
+    (Co)Variance parameters    =  1 
+
+AIC  =  165885.5  | penalty = 150    | AIC = -2*LL + 2*p  
+AICc =  165887.6  | penalty = 152.1    | AICc = -2*LL + 2*p + 2*p*(p+1)/(n-p-1)  (bias corrected AIC)
+BIC  =  166381.5  | penalty = 646.07    | BIC = -2*LL + log(n)*p  
+aBIC  =  166143.1  | penalty = 407.69    | aBIC = -2*LL + log((n-2)/24)*p  (adjusted BIC) 
+CAIC =  166456.5  | penalty = 721.07   | CAIC = -2*LL + [log(n)+1]*p  (consistent AIC)
+
+------------------------------------------------------------
+EAP Reliability
+[1] 0.803
+------------------------------------------------------------
+Covariances and Variances
+      V1
+V1 0.769
+------------------------------------------------------------
+Correlations and Standard Deviations (in the diagonal)
+      V1
+V1 0.877
+------------------------------------------------------------
+Regression Coefficients
+     V1
+[1,]  0
+------------------------------------------------------------
+Item Parameters -A*Xsi
+              item    N     M AXsi_.Cat1 AXsi_.Cat2 B.Cat1.Dim1 B.Cat2.Dim1
+1  KMA_10-kobieta0 2781 1.218      1.227     -0.746           1           2
+2  KMA_10-kobieta1 2729 1.352      1.007     -1.187           1           2
+3  KMA_24-kobieta0 2781 0.152      1.969         NA           1           0
+4  KMA_24-kobieta1 2729 0.169      1.820         NA           1           0
+5   KMA_4-kobieta0 2781 0.601     -0.486         NA           1           0
+6   KMA_4-kobieta1 2729 0.605     -0.499         NA           1           0
+7   KMA_6-kobieta0 2781 0.656     -0.756         NA           1           0
+8   KMA_6-kobieta1 2729 0.727     -1.133         NA           1           0
+9   KMA_8-kobieta0 2781 0.557     -0.273         NA           1           0
+10  KMA_8-kobieta1 2729 0.510     -0.050         NA           1           0
+11  KMA_9-kobieta0 2781 0.427      0.338         NA           1           0
+12  KMA_9-kobieta1 2729 0.526     -0.127         NA           1           0
+13   MA_1-kobieta0 1428 0.444      0.236         NA           1           0
+14   MA_1-kobieta1 1395 0.371      0.616         NA           1           0
+15  MA_11-kobieta0 1428 0.611     -0.547         NA           1           0
+16  MA_11-kobieta1 1395 0.649     -0.695         NA           1           0
+17  MA_17-kobieta0 1428 0.410      0.396         NA           1           0
+18  MA_17-kobieta1 1395 0.494      0.038         NA           1           0
+19  MA_19-kobieta0 1428 0.398      0.456         NA           1           0
+20  MA_19-kobieta1 1395 0.416      0.402         NA           1           0
+21   MA_2-kobieta0 1428 0.732     -1.179         NA           1           0
+22   MA_2-kobieta1 1395 0.786     -1.468         NA           1           0
+23 KMA_12-kobieta0 2781 0.493      0.026         NA           1           0
+24 KMA_12-kobieta1 2729 0.505     -0.029         NA           1           0
+25  MA_20-kobieta0 1428 0.256      1.209         NA           1           0
+26  MA_20-kobieta1 1395 0.268      1.160         NA           1           0
+27  MA_21-kobieta0 1428 0.272      1.110         NA           1           0
+28  MA_21-kobieta1 1395 0.329      0.829         NA           1           0
+29  MA_25-kobieta0 1428 0.565     -0.329         NA           1           0
+30  MA_25-kobieta1 1395 0.599     -0.450         NA           1           0
+31   MA_3-kobieta0 1428 0.667     -0.830         NA           1           0
+32   MA_3-kobieta1 1395 0.708     -1.002         NA           1           0
+33   MA_5-kobieta0 1428 0.714     -1.080         NA           1           0
+34   MA_5-kobieta1 1395 0.724     -1.093         NA           1           0
+35   MA_7-kobieta0 1428 0.720     -1.112         NA           1           0
+36   MA_7-kobieta1 1395 0.580     -0.362         NA           1           0
+37   MB_1-kobieta0 1353 0.746     -1.239         NA           1           0
+38   MB_1-kobieta1 1334 0.772     -1.430         NA           1           0
+39  MB_10-kobieta0 1353 0.549     -0.220         NA           1           0
+40  MB_10-kobieta1 1334 0.433      0.294         NA           1           0
+41  MB_11-kobieta0 1353 0.551     -0.227         NA           1           0
+42  MB_11-kobieta1 1334 0.510     -0.070         NA           1           0
+43  MB_15-kobieta0 1353 0.336      0.815         NA           1           0
+44  MB_15-kobieta1 1334 0.384      0.535         NA           1           0
+45 KMA_13-kobieta0 2781 0.447      0.244         NA           1           0
+46 KMA_13-kobieta1 2729 0.468      0.145         NA           1           0
+47  MB_19-kobieta0 1353 0.331      0.842         NA           1           0
+48  MB_19-kobieta1 1334 0.336      0.778         NA           1           0
+49   MB_2-kobieta0 1353 0.675     -0.842         NA           1           0
+50   MB_2-kobieta1 1334 0.748     -1.281         NA           1           0
+51  MB_20-kobieta0 1353 0.315      0.929         NA           1           0
+52  MB_20-kobieta1 1334 0.353      0.689         NA           1           0
+53  MB_21-kobieta0 1353 0.276      1.145         NA           1           0
+54  MB_21-kobieta1 1334 0.238      1.333         NA           1           0
+55  MB_25-kobieta0 1353 0.209      1.569         NA           1           0
+56  MB_25-kobieta1 1334 0.176      1.765         NA           1           0
+57   MB_3-kobieta0 1353 0.758     -1.311         NA           1           0
+58   MB_3-kobieta1 1334 0.681     -0.902         NA           1           0
+59   MB_5-kobieta0 1353 0.636     -0.641         NA           1           0
+60   MB_5-kobieta1 1334 0.554     -0.274         NA           1           0
+61 KMA_14-kobieta0 2781 0.361      0.659         NA           1           0
+62 KMA_14-kobieta1 2729 0.431      0.319         NA           1           0
+63 KMA_15-kobieta0 2781 0.448      0.235         NA           1           0
+64 KMA_15-kobieta1 2729 0.432      0.313         NA           1           0
+65 KMA_16-kobieta0 2781 0.502     -0.016         NA           1           0
+66 KMA_16-kobieta1 2729 0.544     -0.209         NA           1           0
+67 KMA_18-kobieta0 2781 0.382      0.555         NA           1           0
+68 KMA_18-kobieta1 2729 0.395      0.491         NA           1           0
+69 KMA_22-kobieta0 2781 0.333      2.780      2.571           1           2
+70 KMA_22-kobieta1 2729 0.371      2.663      2.336           1           2
+71 KMA_23-kobieta0 2781 0.257      1.231         NA           1           0
+72 KMA_23-kobieta1 2729 0.266      1.168         NA           1           0
+
+Item Facet Parameters Xsi
+
+Some item xsi parameters are not estimable  which is indicated by values of 99
+
+          parameter        facet     xsi se.xsi
+1            KMA_10         item  -0.483  0.018
+2            KMA_12         item  -0.002  0.029
+3            KMA_13         item   0.194  0.029
+4            KMA_14         item   0.489  0.030
+5            KMA_15         item   0.274  0.029
+6            KMA_16         item  -0.113  0.029
+7            KMA_18         item   0.523  0.030
+8            KMA_22         item   1.227  0.022
+9            KMA_23         item   1.199  0.033
+10           KMA_24         item   1.894  0.039
+11            KMA_4         item  -0.493  0.030
+12            KMA_6         item  -0.944  0.031
+13            KMA_8         item  -0.162  0.029
+14            KMA_9         item   0.106  0.029
+15             MA_1         item   0.426  0.041
+16            MA_11         item  -0.621  0.042
+17            MA_17         item   0.217  0.041
+18            MA_19         item   0.429  0.041
+19             MA_2         item  -1.324  0.047
+20            MA_20         item   1.184  0.046
+21            MA_21         item   0.969  0.044
+22            MA_25         item  -0.390  0.041
+23             MA_3         item  -0.916  0.043
+24             MA_5         item  -1.087  0.045
+25             MA_7         item  -0.737  0.043
+26             MB_1         item  -1.334  0.048
+27            MB_10         item   0.037  0.042
+28            MB_11         item  -0.148  0.042
+29            MB_15         item   0.675  0.044
+30            MB_19         item   0.810  0.044
+31             MB_2         item  -1.061  0.046
+32            MB_20         item   0.809  0.044
+33            MB_21         item   1.239  0.047
+34            MB_25         item   1.667  0.052
+35             MB_3         item  -1.106  0.046
+36             MB_5         item  -0.457  0.043
+37         kobieta0      kobieta   0.022  0.006
+38         kobieta1      kobieta  -0.022     NA
+39     KMA_10:step1    item:step   1.600  0.053
+40     KMA_12:step1    item:step  99.000  0.000
+41     KMA_13:step1    item:step  99.000  0.000
+42     KMA_14:step1    item:step  99.000  0.000
+43     KMA_15:step1    item:step  99.000  0.000
+44     KMA_16:step1    item:step  99.000  0.000
+45     KMA_18:step1    item:step  99.000  0.000
+46     KMA_22:step1    item:step   1.495  0.058
+47     KMA_23:step1    item:step  99.000  0.000
+48     KMA_24:step1    item:step  99.000  0.000
+49      KMA_4:step1    item:step  99.000  0.000
+50      KMA_6:step1    item:step  99.000  0.000
+51      KMA_8:step1    item:step  99.000  0.000
+52      KMA_9:step1    item:step  99.000  0.000
+53       MA_1:step1    item:step  99.000  0.000
+54      MA_11:step1    item:step  99.000  0.000
+55      MA_17:step1    item:step  99.000  0.000
+56      MA_19:step1    item:step  99.000  0.000
+57       MA_2:step1    item:step  99.000  0.000
+58      MA_20:step1    item:step  99.000  0.000
+59      MA_21:step1    item:step  99.000  0.000
+60      MA_25:step1    item:step  99.000  0.000
+61       MA_3:step1    item:step  99.000  0.000
+62       MA_5:step1    item:step  99.000  0.000
+63       MA_7:step1    item:step  99.000  0.000
+64       MB_1:step1    item:step  99.000  0.000
+65      MB_10:step1    item:step  99.000  0.000
+66      MB_11:step1    item:step  99.000  0.000
+67      MB_15:step1    item:step  99.000  0.000
+68      MB_19:step1    item:step  99.000  0.000
+69       MB_2:step1    item:step  99.000  0.000
+70      MB_20:step1    item:step  99.000  0.000
+71      MB_21:step1    item:step  99.000  0.000
+72      MB_25:step1    item:step  99.000  0.000
+73       MB_3:step1    item:step  99.000  0.000
+74       MB_5:step1    item:step  99.000  0.000
+75     KMA_10:step2    item:step  -1.600     NA
+76     KMA_12:step2    item:step -99.000     NA
+77     KMA_13:step2    item:step -99.000     NA
+78     KMA_14:step2    item:step -99.000     NA
+79     KMA_15:step2    item:step -99.000     NA
+80     KMA_16:step2    item:step -99.000     NA
+81     KMA_18:step2    item:step -99.000     NA
+82     KMA_22:step2    item:step  -1.495     NA
+83     KMA_23:step2    item:step -99.000     NA
+84     KMA_24:step2    item:step -99.000     NA
+85      KMA_4:step2    item:step -99.000     NA
+86      KMA_6:step2    item:step -99.000     NA
+87      KMA_8:step2    item:step -99.000     NA
+88      KMA_9:step2    item:step -99.000     NA
+89       MA_1:step2    item:step -99.000     NA
+90      MA_11:step2    item:step -99.000     NA
+91      MA_17:step2    item:step -99.000     NA
+92      MA_19:step2    item:step -99.000     NA
+93       MA_2:step2    item:step -99.000     NA
+94      MA_20:step2    item:step -99.000     NA
+95      MA_21:step2    item:step -99.000     NA
+96      MA_25:step2    item:step -99.000     NA
+97       MA_3:step2    item:step -99.000     NA
+98       MA_5:step2    item:step -99.000     NA
+99       MA_7:step2    item:step -99.000     NA
+100      MB_1:step2    item:step -99.000     NA
+101     MB_10:step2    item:step -99.000     NA
+102     MB_11:step2    item:step -99.000     NA
+103     MB_15:step2    item:step -99.000     NA
+104     MB_19:step2    item:step -99.000     NA
+105      MB_2:step2    item:step -99.000     NA
+106     MB_20:step2    item:step -99.000     NA
+107     MB_21:step2    item:step -99.000     NA
+108     MB_25:step2    item:step -99.000     NA
+109      MB_3:step2    item:step -99.000     NA
+110      MB_5:step2    item:step -99.000     NA
+111 KMA_10:kobieta0 item:kobieta   0.088  0.016
+112 KMA_12:kobieta0 item:kobieta   0.005  0.024
+113 KMA_13:kobieta0 item:kobieta   0.028  0.024
+114 KMA_14:kobieta0 item:kobieta   0.148  0.024
+115 KMA_15:kobieta0 item:kobieta  -0.061  0.024
+116 KMA_16:kobieta0 item:kobieta   0.074  0.024
+117 KMA_18:kobieta0 item:kobieta   0.010  0.024
+118 KMA_22:kobieta0 item:kobieta   0.037  0.020
+119 KMA_23:kobieta0 item:kobieta   0.009  0.026
+120 KMA_24:kobieta0 item:kobieta   0.053  0.029
+121  KMA_4:kobieta0 item:kobieta  -0.016  0.024
+122  KMA_6:kobieta0 item:kobieta   0.166  0.025
+123  KMA_8:kobieta0 item:kobieta  -0.134  0.024
+124  KMA_9:kobieta0 item:kobieta   0.210  0.024
+125   MA_1:kobieta0 item:kobieta  -0.212  0.030
+126  MA_11:kobieta0 item:kobieta   0.052  0.030
+127  MA_17:kobieta0 item:kobieta   0.157  0.029
+128  MA_19:kobieta0 item:kobieta   0.005  0.030
+129   MA_2:kobieta0 item:kobieta   0.122  0.031
+130  MA_20:kobieta0 item:kobieta   0.003  0.031
+131  MA_21:kobieta0 item:kobieta   0.119  0.031
+132  MA_25:kobieta0 item:kobieta   0.038  0.030
+133   MA_3:kobieta0 item:kobieta   0.064  0.030
+134   MA_5:kobieta0 item:kobieta  -0.016  0.031
+135   MA_7:kobieta0 item:kobieta  -0.397  0.030
+136   MB_1:kobieta0 item:kobieta   0.073  0.032
+137  MB_10:kobieta0 item:kobieta  -0.279  0.030
+138  MB_11:kobieta0 item:kobieta  -0.101  0.030
+139  MB_15:kobieta0 item:kobieta   0.118  0.030
+140  MB_19:kobieta0 item:kobieta   0.010  0.031
+141   MB_2:kobieta0 item:kobieta   0.197  0.031
+142  MB_20:kobieta0 item:kobieta   0.098  0.031
+143  MB_21:kobieta0 item:kobieta  -0.116  0.032
+144  MB_25:kobieta0 item:kobieta  -0.120  0.033
+145   MB_3:kobieta0 item:kobieta  -0.227  0.031
+146   MB_5:kobieta0 item:kobieta  -0.205     NA
+147 KMA_10:kobieta1 item:kobieta  -0.088     NA
+148 KMA_12:kobieta1 item:kobieta  -0.005     NA
+149 KMA_13:kobieta1 item:kobieta  -0.028     NA
+150 KMA_14:kobieta1 item:kobieta  -0.148     NA
+151 KMA_15:kobieta1 item:kobieta   0.061     NA
+152 KMA_16:kobieta1 item:kobieta  -0.074     NA
+153 KMA_18:kobieta1 item:kobieta  -0.010     NA
+154 KMA_22:kobieta1 item:kobieta  -0.037     NA
+155 KMA_23:kobieta1 item:kobieta  -0.009     NA
+156 KMA_24:kobieta1 item:kobieta  -0.053     NA
+157  KMA_4:kobieta1 item:kobieta   0.016     NA
+158  KMA_6:kobieta1 item:kobieta  -0.166     NA
+159  KMA_8:kobieta1 item:kobieta   0.134     NA
+160  KMA_9:kobieta1 item:kobieta  -0.210     NA
+161   MA_1:kobieta1 item:kobieta   0.212     NA
+162  MA_11:kobieta1 item:kobieta  -0.052     NA
+163  MA_17:kobieta1 item:kobieta  -0.157     NA
+164  MA_19:kobieta1 item:kobieta  -0.005     NA
+165   MA_2:kobieta1 item:kobieta  -0.122     NA
+166  MA_20:kobieta1 item:kobieta  -0.003     NA
+167  MA_21:kobieta1 item:kobieta  -0.119     NA
+168  MA_25:kobieta1 item:kobieta  -0.038     NA
+169   MA_3:kobieta1 item:kobieta  -0.064     NA
+170   MA_5:kobieta1 item:kobieta   0.016     NA
+171   MA_7:kobieta1 item:kobieta   0.397     NA
+172   MB_1:kobieta1 item:kobieta  -0.073     NA
+173  MB_10:kobieta1 item:kobieta   0.279     NA
+174  MB_11:kobieta1 item:kobieta   0.101     NA
+175  MB_15:kobieta1 item:kobieta  -0.118     NA
+176  MB_19:kobieta1 item:kobieta  -0.010     NA
+177   MB_2:kobieta1 item:kobieta  -0.197     NA
+178  MB_20:kobieta1 item:kobieta  -0.098     NA
+179  MB_21:kobieta1 item:kobieta   0.116     NA
+180  MB_25:kobieta1 item:kobieta   0.120     NA
+181   MB_3:kobieta1 item:kobieta   0.227     NA
+182   MB_5:kobieta1 item:kobieta   0.205     NA
+
+Item Parameters Xsi
+                   xsi se.xsi
+KMA_10          -0.483  0.018
+KMA_12          -0.002  0.029
+KMA_13           0.194  0.029
+KMA_14           0.489  0.030
+KMA_15           0.274  0.029
+KMA_16          -0.113  0.029
+KMA_18           0.523  0.030
+KMA_22           1.227  0.022
+KMA_23           1.199  0.033
+KMA_24           1.894  0.039
+KMA_4           -0.493  0.030
+KMA_6           -0.944  0.031
+KMA_8           -0.162  0.029
+KMA_9            0.106  0.029
+MA_1             0.426  0.041
+MA_11           -0.621  0.042
+MA_17            0.217  0.041
+MA_19            0.429  0.041
+MA_2            -1.324  0.047
+MA_20            1.184  0.046
+MA_21            0.969  0.044
+MA_25           -0.390  0.041
+MA_3            -0.916  0.043
+MA_5            -1.087  0.045
+MA_7            -0.737  0.043
+MB_1            -1.334  0.048
+MB_10            0.037  0.042
+MB_11           -0.148  0.042
+MB_15            0.675  0.044
+MB_19            0.810  0.044
+MB_2            -1.061  0.046
+MB_20            0.809  0.044
+MB_21            1.239  0.047
+MB_25            1.667  0.052
+MB_3            -1.106  0.046
+MB_5            -0.457  0.043
+kobieta0         0.022  0.006
+KMA_10:step1     1.600  0.053
+KMA_12:step1    99.000  0.000
+KMA_13:step1    99.000  0.000
+KMA_14:step1    99.000  0.000
+KMA_15:step1    99.000  0.000
+KMA_16:step1    99.000  0.000
+KMA_18:step1    99.000  0.000
+KMA_22:step1     1.495  0.058
+KMA_23:step1    99.000  0.000
+KMA_24:step1    99.000  0.000
+KMA_4:step1     99.000  0.000
+KMA_6:step1     99.000  0.000
+KMA_8:step1     99.000  0.000
+KMA_9:step1     99.000  0.000
+MA_1:step1      99.000  0.000
+MA_11:step1     99.000  0.000
+MA_17:step1     99.000  0.000
+MA_19:step1     99.000  0.000
+MA_2:step1      99.000  0.000
+MA_20:step1     99.000  0.000
+MA_21:step1     99.000  0.000
+MA_25:step1     99.000  0.000
+MA_3:step1      99.000  0.000
+MA_5:step1      99.000  0.000
+MA_7:step1      99.000  0.000
+MB_1:step1      99.000  0.000
+MB_10:step1     99.000  0.000
+MB_11:step1     99.000  0.000
+MB_15:step1     99.000  0.000
+MB_19:step1     99.000  0.000
+MB_2:step1      99.000  0.000
+MB_20:step1     99.000  0.000
+MB_21:step1     99.000  0.000
+MB_25:step1     99.000  0.000
+MB_3:step1      99.000  0.000
+MB_5:step1      99.000  0.000
+KMA_10:kobieta0  0.088  0.016
+KMA_12:kobieta0  0.005  0.024
+KMA_13:kobieta0  0.028  0.024
+KMA_14:kobieta0  0.148  0.024
+KMA_15:kobieta0 -0.061  0.024
+KMA_16:kobieta0  0.074  0.024
+KMA_18:kobieta0  0.010  0.024
+KMA_22:kobieta0  0.037  0.020
+KMA_23:kobieta0  0.009  0.026
+KMA_24:kobieta0  0.053  0.029
+KMA_4:kobieta0  -0.016  0.024
+KMA_6:kobieta0   0.166  0.025
+KMA_8:kobieta0  -0.134  0.024
+KMA_9:kobieta0   0.210  0.024
+MA_1:kobieta0   -0.212  0.030
+MA_11:kobieta0   0.052  0.030
+MA_17:kobieta0   0.157  0.029
+MA_19:kobieta0   0.005  0.030
+MA_2:kobieta0    0.122  0.031
+MA_20:kobieta0   0.003  0.031
+MA_21:kobieta0   0.119  0.031
+MA_25:kobieta0   0.038  0.030
+MA_3:kobieta0    0.064  0.030
+MA_5:kobieta0   -0.016  0.031
+MA_7:kobieta0   -0.397  0.030
+MB_1:kobieta0    0.073  0.032
+MB_10:kobieta0  -0.279  0.030
+MB_11:kobieta0  -0.101  0.030
+MB_15:kobieta0   0.118  0.030
+MB_19:kobieta0   0.010  0.031
+MB_2:kobieta0    0.197  0.031
+MB_20:kobieta0   0.098  0.031
+MB_21:kobieta0  -0.116  0.032
+MB_25:kobieta0  -0.120  0.033
+MB_3:kobieta0   -0.227  0.031

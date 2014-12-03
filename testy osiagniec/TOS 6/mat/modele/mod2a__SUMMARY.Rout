@@ -1,0 +1,274 @@
+------------------------------------------------------------
+TAM 1.0-3.18-1 (2014-09-08) 
+
+Date of Analysis: 2014-10-22 11:24:40 
+Time difference of 6.554375 secs
+Computation time: 6.554375 
+R version 3.1.1 (2014-07-10) i386, mingw32 | nodename = IBE-KOMPUTER | login = Uzytkownik 
+
+Multidimensional Item Response Model in TAM 
+
+IRT Model 1PL 
+------------------------------------------------------------
+Number of iterations = 43 
+Numeric integration with 21 integration points
+
+Deviance =  166190.2  | Log Likelihood =  -83095.11 
+Number of persons =  5510 
+Number of generalized items =  36 
+Number of items =  36 
+Number of estimated parameters =  39 
+    Item threshold parameters  =  38 
+    Item slope parameters      =  0 
+    Regression parameters      =  0 
+    (Co)Variance parameters    =  1 
+
+AIC  =  166268.2  | penalty = 78    | AIC = -2*LL + 2*p  
+AICc =  166268.8  | penalty = 78.57    | AICc = -2*LL + 2*p + 2*p*(p+1)/(n-p-1)  (bias corrected AIC)
+BIC  =  166526.2  | penalty = 335.96    | BIC = -2*LL + log(n)*p  
+aBIC  =  166402.2  | penalty = 212    | aBIC = -2*LL + log((n-2)/24)*p  (adjusted BIC) 
+CAIC =  166565.2  | penalty = 374.96   | CAIC = -2*LL + [log(n)+1]*p  (consistent AIC)
+
+------------------------------------------------------------
+EAP Reliability
+[1] 0.802
+------------------------------------------------------------
+Covariances and Variances
+      V1
+V1 0.765
+------------------------------------------------------------
+Correlations and Standard Deviations (in the diagonal)
+      V1
+V1 0.874
+------------------------------------------------------------
+Regression Coefficients
+     V1
+[1,]  0
+------------------------------------------------------------
+Item Parameters -A*Xsi
+     item    N     M AXsi_.Cat1 AXsi_.Cat2 B.Cat1.Dim1 B.Cat2.Dim1
+1  KMA_10 5510 1.284      1.125     -0.959           1           2
+2  KMA_24 5510 0.161      1.893         NA           1           0
+3   KMA_4 5510 0.603     -0.492         NA           1           0
+4   KMA_6 5510 0.691     -0.936         NA           1           0
+5   KMA_8 5510 0.533     -0.161         NA           1           0
+6   KMA_9 5510 0.476      0.106         NA           1           0
+7    MA_1 2823 0.408      0.423         NA           1           0
+8   MA_11 2823 0.629     -0.619         NA           1           0
+9   MA_17 2823 0.452      0.217         NA           1           0
+10  MA_19 2823 0.407      0.430         NA           1           0
+11   MA_2 2823 0.758     -1.316         NA           1           0
+12 KMA_12 5510 0.499     -0.001         NA           1           0
+13  MA_20 2823 0.262      1.184         NA           1           0
+14  MA_21 2823 0.300      0.967         NA           1           0
+15  MA_25 2823 0.582     -0.388         NA           1           0
+16   MA_3 2823 0.687     -0.913         NA           1           0
+17   MA_5 2823 0.719     -1.086         NA           1           0
+18   MA_7 2823 0.651     -0.724         NA           1           0
+19   MB_1 2687 0.759     -1.330         NA           1           0
+20  MB_10 2687 0.492      0.036         NA           1           0
+21  MB_11 2687 0.531     -0.148         NA           1           0
+22  MB_15 2687 0.360      0.674         NA           1           0
+23 KMA_13 5510 0.457      0.195         NA           1           0
+24  MB_19 2687 0.333      0.810         NA           1           0
+25   MB_2 2687 0.711     -1.051         NA           1           0
+26  MB_20 2687 0.334      0.808         NA           1           0
+27  MB_21 2687 0.258      1.235         NA           1           0
+28  MB_25 2687 0.193      1.663         NA           1           0
+29   MB_3 2687 0.719     -1.097         NA           1           0
+30   MB_5 2687 0.595     -0.454         NA           1           0
+31 KMA_14 5510 0.396      0.488         NA           1           0
+32 KMA_15 5510 0.440      0.275         NA           1           0
+33 KMA_16 5510 0.523     -0.111         NA           1           0
+34 KMA_18 5510 0.389      0.523         NA           1           0
+35 KMA_22 5510 0.352      2.721      2.449           1           2
+36 KMA_23 5510 0.261      1.199         NA           1           0
+
+Item Facet Parameters Xsi
+
+Some item xsi parameters are not estimable  which is indicated by values of 99
+
+       parameter     facet     xsi se.xsi
+1         KMA_10      item  -0.479  0.018
+2         KMA_12      item  -0.001  0.029
+3         KMA_13      item   0.195  0.029
+4         KMA_14      item   0.488  0.030
+5         KMA_15      item   0.274  0.029
+6         KMA_16      item  -0.111  0.029
+7         KMA_18      item   0.523  0.030
+8         KMA_22      item   1.224  0.022
+9         KMA_23      item   1.199  0.033
+10        KMA_24      item   1.893  0.039
+11         KMA_4      item  -0.492  0.030
+12         KMA_6      item  -0.936  0.031
+13         KMA_8      item  -0.161  0.029
+14         KMA_9      item   0.106  0.029
+15          MA_1      item   0.423  0.041
+16         MA_11      item  -0.619  0.042
+17         MA_17      item   0.217  0.041
+18         MA_19      item   0.429  0.041
+19          MA_2      item  -1.316  0.047
+20         MA_20      item   1.184  0.046
+21         MA_21      item   0.967  0.044
+22         MA_25      item  -0.388  0.041
+23          MA_3      item  -0.913  0.043
+24          MA_5      item  -1.086  0.045
+25          MA_7      item  -0.724  0.042
+26          MB_1      item  -1.330  0.048
+27         MB_10      item   0.036  0.042
+28         MB_11      item  -0.148  0.042
+29         MB_15      item   0.673  0.044
+30         MB_19      item   0.810  0.044
+31          MB_2      item  -1.052  0.046
+32         MB_20      item   0.808  0.044
+33         MB_21      item   1.235  0.047
+34         MB_25      item   1.663  0.052
+35          MB_3      item  -1.097  0.046
+36          MB_5      item  -0.455  0.042
+37  KMA_10:step1 item:step   1.605  0.053
+38  KMA_12:step1 item:step  99.000  0.000
+39  KMA_13:step1 item:step  99.000  0.000
+40  KMA_14:step1 item:step  99.000  0.000
+41  KMA_15:step1 item:step  99.000  0.000
+42  KMA_16:step1 item:step  99.000  0.000
+43  KMA_18:step1 item:step  99.000  0.000
+44  KMA_22:step1 item:step   1.497  0.058
+45  KMA_23:step1 item:step  99.000  0.000
+46  KMA_24:step1 item:step  99.000  0.000
+47   KMA_4:step1 item:step  99.000  0.000
+48   KMA_6:step1 item:step  99.000  0.000
+49   KMA_8:step1 item:step  99.000  0.000
+50   KMA_9:step1 item:step  99.000  0.000
+51    MA_1:step1 item:step  99.000  0.000
+52   MA_11:step1 item:step  99.000  0.000
+53   MA_17:step1 item:step  99.000  0.000
+54   MA_19:step1 item:step  99.000  0.000
+55    MA_2:step1 item:step  99.000  0.000
+56   MA_20:step1 item:step  99.000  0.000
+57   MA_21:step1 item:step  99.000  0.000
+58   MA_25:step1 item:step  99.000  0.000
+59    MA_3:step1 item:step  99.000  0.000
+60    MA_5:step1 item:step  99.000  0.000
+61    MA_7:step1 item:step  99.000  0.000
+62    MB_1:step1 item:step  99.000  0.000
+63   MB_10:step1 item:step  99.000  0.000
+64   MB_11:step1 item:step  99.000  0.000
+65   MB_15:step1 item:step  99.000  0.000
+66   MB_19:step1 item:step  99.000  0.000
+67    MB_2:step1 item:step  99.000  0.000
+68   MB_20:step1 item:step  99.000  0.000
+69   MB_21:step1 item:step  99.000  0.000
+70   MB_25:step1 item:step  99.000  0.000
+71    MB_3:step1 item:step  99.000  0.000
+72    MB_5:step1 item:step  99.000  0.000
+73  KMA_10:step2 item:step  -1.605     NA
+74  KMA_12:step2 item:step -99.000     NA
+75  KMA_13:step2 item:step -99.000     NA
+76  KMA_14:step2 item:step -99.000     NA
+77  KMA_15:step2 item:step -99.000     NA
+78  KMA_16:step2 item:step -99.000     NA
+79  KMA_18:step2 item:step -99.000     NA
+80  KMA_22:step2 item:step  -1.497     NA
+81  KMA_23:step2 item:step -99.000     NA
+82  KMA_24:step2 item:step -99.000     NA
+83   KMA_4:step2 item:step -99.000     NA
+84   KMA_6:step2 item:step -99.000     NA
+85   KMA_8:step2 item:step -99.000     NA
+86   KMA_9:step2 item:step -99.000     NA
+87    MA_1:step2 item:step -99.000     NA
+88   MA_11:step2 item:step -99.000     NA
+89   MA_17:step2 item:step -99.000     NA
+90   MA_19:step2 item:step -99.000     NA
+91    MA_2:step2 item:step -99.000     NA
+92   MA_20:step2 item:step -99.000     NA
+93   MA_21:step2 item:step -99.000     NA
+94   MA_25:step2 item:step -99.000     NA
+95    MA_3:step2 item:step -99.000     NA
+96    MA_5:step2 item:step -99.000     NA
+97    MA_7:step2 item:step -99.000     NA
+98    MB_1:step2 item:step -99.000     NA
+99   MB_10:step2 item:step -99.000     NA
+100  MB_11:step2 item:step -99.000     NA
+101  MB_15:step2 item:step -99.000     NA
+102  MB_19:step2 item:step -99.000     NA
+103   MB_2:step2 item:step -99.000     NA
+104  MB_20:step2 item:step -99.000     NA
+105  MB_21:step2 item:step -99.000     NA
+106  MB_25:step2 item:step -99.000     NA
+107   MB_3:step2 item:step -99.000     NA
+108   MB_5:step2 item:step -99.000     NA
+
+Item Parameters Xsi
+                xsi se.xsi
+KMA_10       -0.479  0.018
+KMA_12       -0.001  0.029
+KMA_13        0.195  0.029
+KMA_14        0.488  0.030
+KMA_15        0.274  0.029
+KMA_16       -0.111  0.029
+KMA_18        0.523  0.030
+KMA_22        1.224  0.022
+KMA_23        1.199  0.033
+KMA_24        1.893  0.039
+KMA_4        -0.492  0.030
+KMA_6        -0.936  0.031
+KMA_8        -0.161  0.029
+KMA_9         0.106  0.029
+MA_1          0.423  0.041
+MA_11        -0.619  0.042
+MA_17         0.217  0.041
+MA_19         0.429  0.041
+MA_2         -1.316  0.047
+MA_20         1.184  0.046
+MA_21         0.967  0.044
+MA_25        -0.388  0.041
+MA_3         -0.913  0.043
+MA_5         -1.086  0.045
+MA_7         -0.724  0.042
+MB_1         -1.330  0.048
+MB_10         0.036  0.042
+MB_11        -0.148  0.042
+MB_15         0.673  0.044
+MB_19         0.810  0.044
+MB_2         -1.052  0.046
+MB_20         0.808  0.044
+MB_21         1.235  0.047
+MB_25         1.663  0.052
+MB_3         -1.097  0.046
+MB_5         -0.455  0.042
+KMA_10:step1  1.605  0.053
+KMA_12:step1 99.000  0.000
+KMA_13:step1 99.000  0.000
+KMA_14:step1 99.000  0.000
+KMA_15:step1 99.000  0.000
+KMA_16:step1 99.000  0.000
+KMA_18:step1 99.000  0.000
+KMA_22:step1  1.497  0.058
+KMA_23:step1 99.000  0.000
+KMA_24:step1 99.000  0.000
+KMA_4:step1  99.000  0.000
+KMA_6:step1  99.000  0.000
+KMA_8:step1  99.000  0.000
+KMA_9:step1  99.000  0.000
+MA_1:step1   99.000  0.000
+MA_11:step1  99.000  0.000
+MA_17:step1  99.000  0.000
+MA_19:step1  99.000  0.000
+MA_2:step1   99.000  0.000
+MA_20:step1  99.000  0.000
+MA_21:step1  99.000  0.000
+MA_25:step1  99.000  0.000
+MA_3:step1   99.000  0.000
+MA_5:step1   99.000  0.000
+MA_7:step1   99.000  0.000
+MB_1:step1   99.000  0.000
+MB_10:step1  99.000  0.000
+MB_11:step1  99.000  0.000
+MB_15:step1  99.000  0.000
+MB_19:step1  99.000  0.000
+MB_2:step1   99.000  0.000
+MB_20:step1  99.000  0.000
+MB_21:step1  99.000  0.000
+MB_25:step1  99.000  0.000
+MB_3:step1   99.000  0.000
+MB_5:step1   99.000  0.000

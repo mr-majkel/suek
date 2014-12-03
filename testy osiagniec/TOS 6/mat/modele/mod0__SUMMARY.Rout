@@ -1,0 +1,125 @@
+------------------------------------------------------------
+TAM 1.0-3.18-1 (2014-09-08) 
+
+Date of Analysis: 2014-10-22 09:03:26 
+Time difference of 5.59632 secs
+Computation time: 5.59632 
+R version 3.1.1 (2014-07-10) i386, mingw32 | nodename = IBE-KOMPUTER | login = Uzytkownik 
+
+Multidimensional Item Response Model in TAM 
+
+IRT Model 1PL 
+------------------------------------------------------------
+Number of iterations = 29 
+Numeric integration with 21 integration points
+
+Deviance =  166190.2  | Log Likelihood =  -83095.11 
+Number of persons =  5510 
+Number of items =  36 
+Number of estimated parameters =  39 
+    Item threshold parameters  =  38 
+    Item slope parameters      =  0 
+    Regression parameters      =  0 
+    (Co)Variance parameters    =  1 
+
+AIC  =  166268.2  | penalty = 78    | AIC = -2*LL + 2*p  
+AICc =  166268.8  | penalty = 78.57    | AICc = -2*LL + 2*p + 2*p*(p+1)/(n-p-1)  (bias corrected AIC)
+BIC  =  166526.2  | penalty = 335.96    | BIC = -2*LL + log(n)*p  
+aBIC  =  166402.2  | penalty = 212    | aBIC = -2*LL + log((n-2)/24)*p  (adjusted BIC) 
+CAIC =  166565.2  | penalty = 374.96   | CAIC = -2*LL + [log(n)+1]*p  (consistent AIC)
+
+------------------------------------------------------------
+EAP Reliability
+[1] 0.802
+------------------------------------------------------------
+Covariances and Variances
+      V1
+V1 0.765
+------------------------------------------------------------
+Correlations and Standard Deviations (in the diagonal)
+      V1
+V1 0.874
+------------------------------------------------------------
+Regression Coefficients
+     V1
+[1,]  0
+------------------------------------------------------------
+Item Parameters -A*Xsi
+     item    N     M AXsi_.Cat1 AXsi_.Cat2 B.Cat1.Dim1 B.Cat2.Dim1
+1    MA_1 2823 0.408      0.422         NA           1           0
+2    MA_2 2823 0.758     -1.316         NA           1           0
+3    MA_3 2823 0.687     -0.913         NA           1           0
+4    MA_5 2823 0.719     -1.086         NA           1           0
+5    MA_7 2823 0.651     -0.725         NA           1           0
+6   MA_11 2823 0.629     -0.619         NA           1           0
+7   MA_17 2823 0.452      0.217         NA           1           0
+8   MA_19 2823 0.407      0.429         NA           1           0
+9   MA_20 2823 0.262      1.184         NA           1           0
+10  MA_21 2823 0.300      0.966         NA           1           0
+11  MA_25 2823 0.582     -0.389         NA           1           0
+12   MB_1 2687 0.759     -1.331         NA           1           0
+13   MB_2 2687 0.711     -1.052         NA           1           0
+14   MB_3 2687 0.719     -1.098         NA           1           0
+15   MB_5 2687 0.595     -0.455         NA           1           0
+16  MB_10 2687 0.492      0.036         NA           1           0
+17  MB_11 2687 0.531     -0.148         NA           1           0
+18  MB_15 2687 0.360      0.673         NA           1           0
+19  MB_19 2687 0.333      0.810         NA           1           0
+20  MB_20 2687 0.334      0.808         NA           1           0
+21  MB_21 2687 0.258      1.235         NA           1           0
+22  MB_25 2687 0.193      1.662         NA           1           0
+23  KMA_4 5510 0.603     -0.492         NA           1           0
+24  KMA_6 5510 0.691     -0.937         NA           1           0
+25  KMA_8 5510 0.533     -0.162         NA           1           0
+26  KMA_9 5510 0.476      0.106         NA           1           0
+27 KMA_10 5510 1.284      1.125     -0.960           1           2
+28 KMA_12 5510 0.499     -0.002         NA           1           0
+29 KMA_13 5510 0.457      0.194         NA           1           0
+30 KMA_14 5510 0.396      0.487         NA           1           0
+31 KMA_15 5510 0.440      0.274         NA           1           0
+32 KMA_16 5510 0.523     -0.112         NA           1           0
+33 KMA_18 5510 0.389      0.523         NA           1           0
+34 KMA_22 5510 0.352      2.721      2.448           1           2
+35 KMA_23 5510 0.261      1.199         NA           1           0
+36 KMA_24 5510 0.161      1.892         NA           1           0
+
+Item Parameters Xsi
+               xsi se.xsi
+MA_1_Cat1    0.422  0.041
+MA_2_Cat1   -1.316  0.047
+MA_3_Cat1   -0.913  0.043
+MA_5_Cat1   -1.086  0.045
+MA_7_Cat1   -0.725  0.042
+MA_11_Cat1  -0.619  0.042
+MA_17_Cat1   0.217  0.041
+MA_19_Cat1   0.429  0.041
+MA_20_Cat1   1.184  0.046
+MA_21_Cat1   0.966  0.044
+MA_25_Cat1  -0.389  0.041
+MB_1_Cat1   -1.331  0.048
+MB_2_Cat1   -1.052  0.046
+MB_3_Cat1   -1.098  0.046
+MB_5_Cat1   -0.455  0.042
+MB_10_Cat1   0.036  0.042
+MB_11_Cat1  -0.148  0.042
+MB_15_Cat1   0.673  0.044
+MB_19_Cat1   0.810  0.044
+MB_20_Cat1   0.808  0.044
+MB_21_Cat1   1.235  0.047
+MB_25_Cat1   1.662  0.052
+KMA_4_Cat1  -0.492  0.030
+KMA_6_Cat1  -0.937  0.031
+KMA_8_Cat1  -0.162  0.029
+KMA_9_Cat1   0.106  0.029
+KMA_10_Cat1  1.125  0.034
+KMA_10_Cat2 -2.084  0.033
+KMA_12_Cat1 -0.002  0.029
+KMA_13_Cat1  0.194  0.029
+KMA_14_Cat1  0.487  0.030
+KMA_15_Cat1  0.274  0.029
+KMA_16_Cat1 -0.112  0.029
+KMA_18_Cat1  0.523  0.030
+KMA_22_Cat1  2.721  0.039
+KMA_22_Cat2 -0.273  0.044
+KMA_23_Cat1  1.199  0.033
+KMA_24_Cat1  1.892  0.039
