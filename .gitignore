@@ -8,4 +8,7 @@
 *.dat
 *.pdf
 *.sav
+*.html
+*.md
+tos6_mat_cache/
 .Rproj.user
