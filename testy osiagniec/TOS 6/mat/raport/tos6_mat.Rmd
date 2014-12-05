@@ -3,10 +3,10 @@ title: "Analiza Rascha dla testu matematycznego TOS6"
 author: "Michał Modzelewski"
 date: "Wednesday, December 03, 2014"
 output:
-  html_document:
-    theme: united
   pdf_document:
     toc: no
+  html_document:
+    theme: united
   word_document: default
 csl: apa.csl
 bibliography: Rasch.bib
@@ -17,32 +17,35 @@ setwd(paste0("C:\\Users\\Uzytkownik\\Documents\\SUEK\\",
 wd = getwd()
 
 options("stringsAsFactors" = FALSE)
+options("scipen" = 7)
 
 library(TAM)
 library(xtable)
 library(plyr)
 
 source("skrypty\\pomocnicze\\difWang.R")
+source("skrypty\\pomocnicze\\sumPart.R")
 
 # wczytaj dane
 load("bazy zmien/bazy_mat.RData")
 
 ```
+
 # O analizie
 W niniejszym dokumencie opisane są analizy psychometryczne przeprowadzone dla testu matematycznego TOS6. Celem analiz jest:
 
 1. Określenie, na ile zadania wchodzące w skład testu zachowują się zgodnie z przewidywaniami modelu Rascha [-@rasch_probabilistic_1980]. W tym celu przewidziano następujące kroki:
     a. Sprawdzenie ogólnego dopasowania zadań, w tym uporządkowania kategorii dla zadań wielokategorialnych.
     b. Sprawdzenie występowania efektu DIF ze względu na wersję testu.
-    c. Sprawdzenie wystepowania efektu DIF ze względu na płeć.
+    c. Sprawdzenie występowania efektu DIF ze względu na płeć.
 2. Selekcja zadań najlepiej dopasowanych oraz ewentualna modyfikacja skal oceny (w przypadku zadań wielokategorialnych).
 3. Wyliczenie oszacowań poziomu umiejętności dla uczniów na wyselekcjonowanym zbiorze zadań.
 
 Analizy zostały przeprowadzone z wykorzystaniem środowiska R [@r_core_team_r:_2014] w wersji `r paste(R.Version()$major, R.Version()$minor, sep = ".")`. Głównym pakietem wykorzystanym do analiz jest pakiet `TAM` (`r paste0("ver.", packageVersion("TAM"))`).
 
-Analizowane dane pochodzą z VII etapu Badania szkolnych uwarunkowań efektywności kształcenia. Testy rozwiązało łącznie `r nrow(mat_all)` uczniów. Uczniowie ci w roku szkolnym 2013/2014 uczyli się w `r length(unique(mat_all$id_szkoly))` szkołach podstawowych. Zastosowane modele nie biorą niestety tego pogrupowania pod uwagę, a przez to znacznie niedoszacowują wielkość błędów standardowych. Przy interpreatcji wyników trzeba mieć to na uwadze.
+Analizowane dane pochodzą z VII etapu *Badania szkolnych uwarunkowań efektywności kształcenia*. Testy rozwiązało łącznie `r nrow(mat_all)` uczniów. Uczniowie ci w roku szkolnym 2013/2014 uczyli się w `r length(unique(mat_all$ID_szk))` szkołach podstawowych. Zastosowane modele nie biorą niestety tego pogrupowania pod uwagę, a przez to znacznie nie doszacowują wielkość błędów standardowych. Przy interpretacji wyników trzeba mieć to na uwadze.
 
-Do analiz z wykorzystaniem pakietu `TAM` potrzebne są dwa zbiory. Do analizy IRT potrzebne są dane zawierające wartości przekodowane - 0 odpowiada błędnym odpowiedziom, 1, 2,..., k kolejnym poziomom wykonania, systematyczne braki danych oznaczone są jako `NA`.
+Do analiz z wykorzystaniem pakietu `TAM` potrzebne są dwa zbiory. Do analizy IRT potrzebne są dane zawierające wartości przekodowane - 0 odpowiada błędnym odpowiedziom, 1, 2,..., k - kolejnym poziomom wykonania, systematyczne braki danych oznaczone są jako `NA`.
 
 Do analizy KTT - pozwalającej m.in. na ocenę działania dystraktorów w zadaniach zamkniętych - potrzebne są z kolei zbiory surowe (zawierające informacje o wybranych przez ucznia odpowiedziach lub przyznanych kodach).
 
@@ -58,7 +61,7 @@ head(mat_all[, 1:10])
 head(mat_all_r[, 1:10])
 ```
 
-Każdy wiersz odpowiada jednemu uczniowi. Na początku zbioru znajdują się zmienne identyfikujące i opisowe. Na dalszych miejscach znajdują się zmienne odpowiadające kolejnym zadaniom w teście. W skład tej grupy zmiennych wchodzą zadania z wersji A i B testu oraz zadania kotwiczące. Nazwy zmiennych kotwiczacych powstały poprzez dodanie przedrostka "K" do nazwy zadania kotwiczącego w wersji A (np. `r paste0("K", kotw[1, 1])`). Na potrzeby analiz IRT kody '9' (brak odpowiedzi) były traktowane jako odpowiedzi błędne.
+Każdy wiersz odpowiada jednemu uczniowi. Na początku zbioru znajdują się zmienne identyfikujące i opisowe. Na dalszych miejscach znajdują się zmienne odpowiadające kolejnym zadaniom w teście. W skład tej grupy zmiennych wchodzą zadania z wersji A i B testu oraz zadania kotwiczące. Nazwy zmiennych kotwiczących powstały poprzez dodanie przedrostka "K" do nazwy zadania kotwiczącego w wersji A (np. `r paste0("K", kotw[1, 1])`). Na potrzeby analiz IRT kody '9' (brak odpowiedzi) były traktowane jako odpowiedzi błędne.
 
 ## Krótko o teście
 
@@ -72,10 +75,11 @@ knitr::kable(kotw, row.names = FALSE,
       caption = "Zadania kotwiczące w podziale na wersje")
 ```
 
-W teście znajdują się zarówno zadania zamknięte jak i otwarte. Zdecydowana większość zadań jest oceniania dychotomicznie. Do ich analizy został wykorzystany prosty model logistyczny (*Simple logistic model*, SLM). Wybrane zadania otwarte są jednak oceniane na skali 0-1-2. Do ich analizy zastosowano model *Partial Credit*. Do analizy DIF wykorzystano wieloaspektowy model Rascha (*Mulit-faceted Rasch model*, MFR). Pakiet `TAM` umożliwia elastyczne specyfikowanie tych modeli, wykorzystując uogólnioną formę modelu Rascha opisaną w [@adams_multidimensional_1997]. Do estymacji tego modelu wykorzystywana jest metoda brzegowej nawjyższej wiarygodności (*Marginal maximum likelihood*, MML). Metoda ta wymaga założenia o kształcie rozkładu umiejętności w badanej populacji. W pakiecie `TAM` rozkład ten przybliżany jest za pomocą rozkładu normalnego (o estymowanej średniej i odchyleniu standardowym).
+W teście znajdują się zarówno zadania zamknięte jak i otwarte. Zdecydowana większość zadań jest oceniania dychotomicznie. Do ich analizy został wykorzystany prosty model logistyczny (*simple logistic model*, SLM). Wybrane zadania otwarte są jednak oceniane na skali 0-1-2. Do ich analizy zastosowano model *partial credit model* (PCM). Do analizy DIF wykorzystano wieloaspektowy model Rascha (*Mulit-faceted Rasch model*, MFR). Pakiet `TAM` umożliwia elastyczne specyfikowanie tych modeli, wykorzystując uogólnioną formę modelu Rascha opisaną w [@adams_multidimensional_1997]. Do estymacji tego modelu wykorzystywana jest metoda brzegowej najwyższej wiarygodności (*marginal maximum likelihood*, MML). Metoda ta wymaga założenia o kształcie rozkładu umiejętności w badanej populacji. W pakiecie `TAM` rozkład ten przybliżany jest za pomocą rozkładu normalnego (o estymowanej średniej i odchyleniu standardowym).
 
 # Sprawdzenie dopasowania
-Skalowanie zaczniemy od próby dopasowania danych do modelu Rascha. W związku z tym, że analizy chcemy wykonać tylko na podzbiorze zadań (zadania unikane dla wersji *plus* zadania kotwiczące), potrzebujemy określić, które zmienne chcemy uwzględnić w analizach.
+Skalowanie zaczniemy od próby dopasowania danych do modelu Rascha. W związku z tym, że analizy chcemy wykonać tylko na podzbiorze zadań (zadania unikalne dla wersji *plus* zadania kotwiczące), potrzebujemy określić, które zmienne chcemy uwzględnić w analizach.
+
 ```{r}
 # nazwy wszystkich zadań w teście
 items_all = grep("MA|MB", names(mat_all_r), value = TRUE)
@@ -85,20 +89,37 @@ items1 = items_all[!(items_all %in% kotw)]
 items1
 ```
 
-Możemy już wyestymować pierwszy model. Do tego celu wykorzystamy funkcję `tam`.
+Możemy już wyestymować pierwszy model. Do tego celu wykorzystamy funkcję `tam()`.
+
 ``` {r, results = 'hide'}
 mod0 = tam(mat_all_r[, items1], irtmodel = "PCM")
 ```
-Tak wyspecyfikowany model pozwala nam sprawdzić, na ile niemodyfikowane dane zachowują sie zgodnie z przewidywaniami modelu Rascha. Rzućmy zatem okiem na podsumowanie modelu (wszystkie pliki z podsumowaniem modelu zapisane są w folderze "modele").
+
+Tak wyspecyfikowany model pozwala nam sprawdzić, na ile niemodyfikowane dane zachowują się zgodnie z przewidywaniami modelu Rascha. Rzućmy zatem okiem na podsumowanie modelu (wszystkie pliki z podsumowaniem modelu zapisane są w folderze "modele").
+
 ****
-```{r, echo = 2}
+
+```{r, echo = 2, results = 'hide'}
 setwd(wd)
 summary(mod0, "modele/mod0")
 ```
 
-Podsumowanie jest dosyć obfite. Złożone jest z pięciu części. W pierwszej opisane są informacje dotyczące wersji pakietu, środowiska R oraz czasu wykonania analizy. Ta część kończy informacją o rodzaju wyestymowanego modelu (1PL, czyli model Rascha).
+W związku z tym, że podsumowanie modelu jest dosyć obszerne (zajmuje ponad dwie strony!), w niniejszym raporcie będziemy wczytywać tylko wybrane jego części. Przyjrzyjmy się jednak poszczególnym jego częściom.
 
-Kolejna cześć zawiera informacje o podsumowujące wykonaną analizę - m.in. liczbę wyestymowanych parametrów modelu (`r mod0$ic$Npars`), liczbę iteracji (`r mod0$iter`), a także ostateczną wartość funkcji wiarygodności (*log likelihood* i *deviance*, odpowiednio `r round((mod0$ic$deviance/-2), 2)` i `r round(mod0$ic$deviance, 2)`). `r round(2.45678232353654678324349, 2)`
+W pierwszej opisane są informacje dotyczące wersji pakietu, środowiska R oraz czasu wykonania analizy. Ta część kończy się informacją o rodzaju wyestymowanego modelu (1PL, czyli model Rascha).
+
+```{r, echo = FALSE}
+setwd(wd)
+sumPart("modele/mod0__SUMMARY.Rout", 1)
+```
+
+Kolejna część zawiera informacje podsumowujące wykonaną analizę - m.in. liczbę wyestymowanych parametrów modelu (`r mod0$ic$Npars`), liczbę iteracji (`r mod0$iter`), a także ostateczną wartość funkcji wiarygodności (*log likelihood* i *deviance*, odpowiednio `r round(mod0$ic$deviance/-2, 2)` i `r round(mod0$ic$deviance, 1)`).
+
+```{r, echo = FALSE}
+setwd(wd)
+sumPart("modele/mod0__SUMMARY.Rout", 2)
+```
+
 
 
 # Literatura cytowana
