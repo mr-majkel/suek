@@ -60,6 +60,11 @@ getKey = function(cdbook, vars, open_key = c("1", "2"), mcq_key = NULL,
         item_index = which(items == it)
         it_vals = values[[item_index]]
         n_vals = length(it_vals)
+        # test na brak duplikatów w codebooku
+        if (length(unique(it_vals)) < n_vals) {
+          warning("W codebooku przynajmniej jedna wartość dla zmiennej", it, 
+                  "ma zdefiniowane kilka etykiet\n.")
+        }
         key_list[[it]] = rep(0, n_vals)
         if (it %in% items_o) {
             open_index = match(open_key[open_key %in% it_vals], it_vals)
@@ -96,12 +101,9 @@ getKey = function(cdbook, vars, open_key = c("1", "2"), mcq_key = NULL,
     # kody zamknięte
     if (!is.null(mcq_key)){
         if (length(mcq_key) != length(items_c)) {
-            cat("Liczba kodow do zadan zamknietych (", length(mcq_key),
-                ") ", "nie zgadza sie z wykryta ich liczba (",
-                length(items_c),")!", sep = "", fill = TRUE)
-            cat("Zadaniom zamknietym nie przypisano kodow.", fill = TRUE)          
-        #} else {
-        #    names(mcq_key) = items_c
+            warning("Liczba kodów do zadań zamkniętych (", length(mcq_key), ") ",
+                    "nie zgadza się z wykrytą ich liczbą (", length(items_c),
+                    ")! Zadaniom zamkniętym nie przypisano kodów.")
         }
         return_list[["mcq_key"]] = mcq_key
     }
