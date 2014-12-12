@@ -89,10 +89,11 @@ items1 = items_all[!(items_all %in% kotw)]
 items1
 ```
 
-Możemy już wyestymować pierwszy model. Do tego celu wykorzystamy funkcję `tam()`.
+Możemy już wyestymować pierwszy model. Do tego celu wykorzystamy funkcję `tam.mml.mfr()`.
 
 ``` {r, results = 'hide'}
-mod0 = tam(mat_all_r[, items1], irtmodel = "PCM")
+mod0 = tam.mml.mfr(mat_all_r[, items1], formulaA = ~ item + item:step,
+                   control = list(QMC = FALSE))
 ```
 
 Tak wyspecyfikowany model pozwala nam sprawdzić, na ile niemodyfikowane dane zachowują się zgodnie z przewidywaniami modelu Rascha. Rzućmy zatem okiem na podsumowanie modelu (wszystkie pliki z podsumowaniem modelu zapisane są w folderze "modele").
@@ -120,6 +121,27 @@ setwd(wd)
 sumPart("modele/mod0__SUMMARY.Rout", 2)
 ```
 
+W kolejnej zawarto wartość współczynnika rzetelności EAP/PV, czyli stosunku wariancji cechy wyliczonej na podstawie oszacowań EAP, do wariancji wyliczonej z PV.
 
+```{r, echo = FALSE}
+setwd(wd)
+sumPart("modele/mod0__SUMMARY.Rout", 3)
+```
+
+W kolejnych dwóch opisane są związki pomiędzy zmiennymi wykorzystanymi w regresji latentnej (czyli warunkowaniu). W związku z tym, że model ten nie zawierał regresji latentnej, mamy informację tylko o wariancji i odchyleniu standardowym umiejętności matematycznych.
+
+```{r, echo = FALSE}
+setwd(wd)
+sumPart("modele/mod0__SUMMARY.Rout", c(4, 5))
+```
+
+W przedostatniej części zamieszczone są współczynniki regresji latentnej. Widzimy, że średnia dla umiejętności matematycznych została ustalona na zero.
+
+```{r, echo = FALSE}
+setwd(wd)
+sumPart("modele/mod0__SUMMARY.Rout", 6)
+```
+
+Ta ostatnia informacja jest szczególnie ważna w kontekście analizy oszacowań parametrów zadań. Informacje o parametrach zadań zawarte
 
 # Literatura cytowana
