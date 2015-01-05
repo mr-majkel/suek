@@ -123,5 +123,3 @@ getKey = function(cdbook, vars, open_key = c("1", "2"), mcq_key = NULL,
     }
     return(return_list)
 }
-
-get_key()
