@@ -30,6 +30,10 @@ code_mat_b = read.csv2(paste0("bazy oryg\\",
 mat_a$wersja = "A"
 mat_b$wersja = "B"
 
+# wersja z not reached bazy
+mat_a = showNotReached(mat_a, "MA")
+mat_b = showNotReached(mat_b, "MB")
+
 # poprawne kody do zadań zamkniętych
 # wersja A
 key_a = c(2,4,3,1,3,1,3,3,3,2,3,1,3,2,3,3,2)
@@ -38,13 +42,16 @@ key_b = c(3,4,3,4,3,3,2,2,3,2,2,3,1,3,4,3,2)
 
 # stworzenie klucza do rekodowania
 # wersja A
-key_mat_a = getKey(code_mat_a, "MA", c("1","2"), key_a)
+key_mat_a = getKey(code_mat_a, "MA", c("1","2"), key_a, na_codes = "N")
 # wersja B
-key_mat_b = getKey(code_mat_b, "MB", c("1","2"), key_b)
+key_mat_b = getKey(code_mat_b, "MB", c("1","2"), key_b, na_codes = "N")
 
 # zapisanie klucza
-writeKey(key_mat_a, "bazy zmien\\klucz_A.csv")
-writeKey(key_mat_b, "bazy zmien\\klucz_B.csv")
+# writeKey(key_mat_a, "bazy zmien\\klucz_A.csv")
+# writeKey(key_mat_b, "bazy zmien\\klucz_B.csv")
+
+# w kluczu w wersji A zad. 25, jako poprawną odpowiedź traktuje się odpowiedzi
+# B i D.
 
 # wczytanie klucza
 key_mat_a = readKey("bazy zmien\\klucz_A.csv")

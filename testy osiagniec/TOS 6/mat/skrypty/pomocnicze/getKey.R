@@ -48,6 +48,16 @@ getKey = function(cdbook, vars, open_key = c("1", "2"), mcq_key = NULL,
     items = getItems(cdbook, vars)
     # lista wartości
     values = lapply(cdbook[cdbook$var_id %in% items, "values"], getValues)
+    # uzupełnienie o wartości "braków danych"
+    if(!is.null(na_codes)) {
+      values = lapply(values, function(vals) {
+        ind = which(!(na_codes %in% vals))
+        if(length(ind) > 0) {
+          vals = append(vals, na_codes[ind])
+        }
+        return(vals)
+        })
+    }
     # zadania zamknięte (posiadają kod 4)
     closed = unlist(lapply(values, function(x) {y = 4 %in% x; return(y)}))
     items_c = items[closed]
@@ -113,3 +123,5 @@ getKey = function(cdbook, vars, open_key = c("1", "2"), mcq_key = NULL,
     }
     return(return_list)
 }
+
+get_key()
