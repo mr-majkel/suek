@@ -52,7 +52,7 @@ mat_all[mat_all$plec == "M", "kobieta"] = 0
 
 # sortowanie zmiennych
 zmienne = c(grep("ID_ucz|ID_szk|oddz|nr_dz", names(mat_all), value = TRUE),
-  "plec", "kobieta", grep("M", names(mat_all), value = TRUE))
+  "wersja", "plec", "kobieta", grep("M", names(mat_all), value = TRUE))
 mat_all = mat_all[, zmienne]
 mat_all_r = mat_all_r[, zmienne]
 
