@@ -12,7 +12,12 @@
 # mcq       wektor tekstowy z nazwami zmiennych określonych jako zamknięte.
 # 
 # Uwagi
-# Update
+# Plik .csv powinien opisywać zmienne do zrekodowania w następujący sposób:
+# nazwa_zmiennej; ["mcq"]
+# values; recodes
+# [w kolejnych liniach wartości zmiennej i odpowiadające im wartości do
+# zrekodowania oddzielone średnikiem (';')]
+# pusta_linia
 readKey = function(file) {
     # funkcja pomocnicza do wyciągania elementów rozdzielonych średnikiem
     separate = function(x, ind) {
@@ -21,26 +26,37 @@ readKey = function(file) {
         return(y)
     }
     # wczytanie pliku
-    code_df = read.csv2(file, stringsAsFactors = FALSE)
+    raw_file = readLines(con = file)
+    # liczba linii w pliku
+    n_lines = length(raw_file)
+    # liczba pustych linii w pliku
+    empty_lines = which(raw_file == "")
+    n_empty_lines = length(empty_lines)
+    # określenie indeksów z nazwami 'itemów'
+    item_lines = c(1, empty_lines[1:(n_empty_lines - 1)] + 1)
     # wyłowienie nazw itemów
-    items = unique(code_df$item)
+    items = raw_file[item_lines]
     # określenie itemów zamkniętych
-    # mcq_bool = grepl(";", items)
-    # items_c = NULL
+    mcq_bool = grepl(";", items)
+    items_c = NULL
     
-#     if (sum(mcq_bool) > 0) {
-#         items = separate(items, 1)
-#         items_c = items[mcq_bool]
-#     }
-    # wyłonienie 'values' i 'recodes'
-    values = list()
-    recodes = list()
-    for (it in items) {
-      values[[it]] = code_df[code_df$item == it, "value"]
-      recodes[[it]] = code_df[code_df$item == it, "recode"]
+    if (sum(mcq_bool) > 0) {
+        items = separate(items, 1)
+        items_c = items[mcq_bool]
     }
+    # lista z wartościami
+    key_list = list()
+    for (it in items) {
+        item_index = which(items == it)
+        begin_key = item_lines[item_index] + 2
+        end_key = empty_lines[item_index] - 1
+        key_list[[it]] = raw_file[begin_key:end_key]
+    }
+    # wyłonienie 'values' i 'recodes'
+    values = lapply(key_list, separate, 1)
+    recodes = lapply(key_list, separate, 2)
     # wyłonienie zadań otwartych
-    # items_o = items[!mcq_bool]
+    items_o = items[!mcq_bool]
     
     # tworzenie listy obiektów
     return_list = list()
@@ -51,9 +67,9 @@ readKey = function(file) {
     # rekodowane wartości
     return_list[["recodes"]] = recodes
     # zadania otwarte
-    # return_list[["open"]] = items_o
+    return_list[["open"]] = items_o
     # zadania zamknięte
-    # return_list[["mcq"]] = items_c
+    return_list[["mcq"]] = items_c
     # # kody otwarte
     # return_list[["open_key"]] = open_key
     # # kody zamknięte

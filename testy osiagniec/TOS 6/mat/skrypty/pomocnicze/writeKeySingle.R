@@ -7,19 +7,20 @@
 #         FALSE.
 # file    string z nazwą pliku docelowego.
 writeKeySingle = function(name, values, recodes, mcq = FALSE, file = "") {
-    if (mcq){
-        name = paste(c(name, "mcq"), collapse = ";")
-    }
-    output = c(name, paste("value", "recode", sep = ";"))
+    # if (mcq){
+    #     name = paste(c(name, "mcq"), collapse = ";")
+    # }
+    # output = c(name, paste("value", "recode", sep = ";"))
+    output = character()
     i = 1
     for (v in values) {
         if (!missing(recodes)) {
-            output = c(output, paste(v, recodes[[i]], sep = ";"))
+            output = c(output, paste(name, v, recodes[[i]], sep = ";"))
             i = i + 1
         } else {
             output = c(output, v)
         }       
     }
     cat(output, sep = "\n", file = file, append = TRUE)
-    cat("\n", file = file, append = TRUE)
+    # cat("\n", file = file, append = TRUE)
 }

@@ -8,7 +8,8 @@
 # Wykorzystuje funkcję writeKeySingle() do zapisu poszczególnych zmiennych.
 writeKey = function(key_list, file = "", append = FALSE) {
     if (!append) {
-        cat("", sep = "", file = file, append = FALSE)
+        output = paste(c("item", "value", "recode"), collapse = ";")
+        cat(output, sep = "\n", file = file, append = FALSE)
     }
     items = names(key_list[["values"]])
     mcq_bool = items %in% key_list[["mcq"]]
