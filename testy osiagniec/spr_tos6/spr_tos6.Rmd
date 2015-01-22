@@ -1,0 +1,206 @@
+---
+title: "Przyłączanie sprawdzianu do SUEKowych uczniów"
+author: "Michał Modzelewski"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+library(plyr)
+options(width = 90)
+
+```
+
+# Wczytanie baz danych
+
+```{r}
+setwd("~/SUEK/Projects/suek/testy osiagniec/spr_tos6")
+# sprawdzian
+spr14 = read.csv2("data/sprawdzian_2014.csv", stringsAsFactors = FALSE)
+
+# protokoł
+suek_u = read.csv2("data/prot.csv", stringsAsFactors = FALSE)
+
+# id_szkoly
+suek_s = read.csv2("data/calosc.csv", stringsAsFactors = FALSE)
+names(suek_s) = c("id_szk", "id_cke_s")
+
+# rodzice etap 1
+rodz_e1 = read.csv2("data/e1_rodzic.csv", stringsAsFactors = FALSE)[, c(1, 3)]
+names(rodz_e1) = c("id_ucz", "data_ur")
+
+# rodzice etap 3
+rodz_e3 = read.csv2(paste0("data/SUEK E3 Baza ankiet rodziców",
+                           " - niebieskie pełne CÓRKA Dane.csv"),
+                    stringsAsFactors = FALSE)[, c(2, 4)]
+names(rodz_e3) = c("id_ucz", "data_ur")
+
+```
+
+# Obróbka danych
+
+1. Wyrzucenie uczniów, dla których nie zebrano informacji o numerze z dziennika.
+
+```{r}
+# wyrzucenie uczniow o nrze z dziennika 97
+suek_u = suek_u[suek_u$nr_dz6 != 97, ]
+
+```
+
+2. Poprawienie formatu daty urodzenia w bazach rodzicielskich z etapu 1 i 3. Obcięcie godzin oraz zamiana "-" na ".".
+
+```{r}
+# obcięcie godzin i podmiana separatorów
+# etap 1
+rodz_e1$data_ur = gsub("-", ".", substr(rodz_e1$data_ur, 1, 10))
+# etap 3
+rodz_e3$data_ur = gsub("-", ".", substr(rodz_e3$data_ur, 1, 10))
+
+```
+
+3. Przyłączenie id\cke do uczniów.
+
+```{r}
+# przylaczenie id cke do uczniow
+suek = merge(suek_u, suek_s, all.x = TRUE)
+
+```
+
+4. Poprawienie id\_cke dla szkoły w Pilchowie. W naszych bazach figuruje jako szkoła w Tanowie (ID 034), klasa "B". Jest to jednak filia szkoły w Tanowie, czyli całkiem zewnętrzny byt. W związku z tym trzeba zmienić id\_cke, a także oznaczenie klasy na "A". 
+
+```{r}
+# podmiana ID CKE dla szkoły w pilchowie, ID 34 klasa B
+suek[grep("^034.B", suek$id_ucz), "id_cke_s"] = "321104-11P1X"
+suek[grep("^034.B", suek$id_ucz), "id_klasa6"] = "A"
+
+```
+
+5. Stworzenie identyfikatora dla klas w bazach sprawdzianowych i suekowych
+
+```{r}
+suek$id_cke_kl = paste(suek$id_cke_s, suek$id_klasa6, sep = "_")
+spr14$id_cke_kl = paste(spr14$kod_s, spr14$klasa_s, sep = "_")
+                          
+```
+
+6. Przyłączenie daty urodzenia do bazy suekowej.
+
+```{r}
+# przylaczenie daty urodzenia
+suek1 = merge(suek, rodz_e1, all.x = TRUE)
+
+# uczniowie dla których nie ma daty urodzenia z pierwszego etapu
+id_3 = suek1[is.na(suek1$data_ur), "id_ucz"]
+
+# odjęcie uczniów, których nie ma w bazie z 3 etapu
+id_3 = id_3[id_3 %in% rodz_e3$id_ucz]
+
+# dopisanie dat urodzenia dla uczniów z 3 etapu
+suek1[match(id_3, suek1$id_ucz), "data_ur"] =
+  rodz_e3[match(id_3, rodz_e3$id_ucz), "data_ur"]
+
+```
+
+7. Wybranie klas suekowych z bazy sprawdzianowej oraz ograniczenie zakresu zbiorów do zmiennych identyfikujących.
+
+```{r}
+zm_spr = c("kod_u_s", "plec", "data_ur", "id_cke_kl")
+spr = spr14[spr14$id_cke_kl %in% unique(suek$id_cke_kl), zm_spr]
+
+zm_suek = c("imie_nazwisko", "nr_dz6", "plec", "data_ur", "id_cke_kl", "id_ucz")
+suek2 = suek1[, zm_suek]
+
+```
+
+# Łączenie sprawdzianu i danych suekowych
+
+Na potrzeby łączenia przyjęto, że data urodzenia stanowi lepszy identyfikator uczniów niż ich nr z dziennika. Nr z dziennika oraz płeć wykorzystywane będą tylko do celów kontrolnych.
+
+Sprawdzenie dla ilu klas (z `r length(unique(suek2$id_cke_kl))`) data urodzenia identyfikuje jednoznacznie uczniów w bazie sprawdzianowej...
+
+```{r}
+nucz_df = ddply(spr, "id_cke_kl", summarize,
+                  n_ucz = length(kod_u_s),
+                  n_uniq = length(unique(data_ur)),
+                  equal = n_ucz == n_uniq)
+
+sum(nucz_df$equal)
+```
+
+i suekowej.
+
+```{r}
+suek_nucz_df = ddply(suek2, "id_cke_kl", summarize,
+                  n_ucz = length(nr_dz6),
+                  n_uniq = length(unique(data_ur)),
+                  equal = n_ucz == n_uniq)
+
+sum(suek_nucz_df$equal)
+
+sum(suek_nucz_df[suek_nucz_df[, 2] == nucz_df[, 2], "equal"])
+```
+
+
+```{r}
+upd_suek = Map(join_var, dlply(suek2, "id_cke_kl"), dlply(spr, "id_cke_kl"),
+               MoreArgs = list(askBy.x = "data_ur", joinVar = "kod_u_s"))
+
+
+```
+
+
+```{r}
+# # id uczniów
+# id_na = suek_spr[is.na(suek_spr$s_1), "id_ucz"]
+# 
+# # id szkół i klas z uczniami nieprzyłączonymi
+# cke_na = unique(suek_spr[suek_spr$id_ucz %in% id_na,
+#                          c("id_cke_s", "id_klasa6")])
+# 
+# cke_nm = c("kod_u_s", "plec", "data_ur")
+# suek_nm = c("imie_nazwisko", "nr_dz6", "plec",
+#             "data_ur", "id_ucz")
+# 
+# comp_list = list()
+# for (rr in 1:nrow(cke_na)) {
+#     id_szk = cke_na[rr, "id_cke_s"]
+#     id_kl = cke_na[rr, "id_klasa6"]
+#     
+#     look_spr = spr14[(spr14$kod_s == id_szk) &
+#                        (spr14$klasa_s == id_kl), cke_nm]
+#     look_spr = look_spr[order(look_spr$kod_u_s), ]
+#     
+#     look_suek = suek_u_cke[(suek_u_cke$id_cke_s == id_szk) &
+#                              (suek_u_cke$id_klasa6 == id_kl), suek_nm]
+#     look_suek = look_suek[order(look_suek$nr_dz6), ]
+#     
+#     look_merge = merge(look_suek[, c("nr_dz6", "plec", "data_ur")],
+#                        look_spr[, c("kod_u_s", "plec", "data_ur")],
+#                        all.x = TRUE,
+#                        by.x = "nr_dz6", by.y = "kod_u_s")
+#     look_merge$plec_dif = look_merge$plec.x != look_merge$plec.y                    
+#     look_merge$wiek_dif = look_merge$data_ur.x != look_merge$data_ur.y
+#     
+#     look_suek = merge(look_suek,
+#                       look_merge[, c("nr_dz6", "plec_dif", "wiek_dif")],
+#                       all.x = TRUE)
+#     
+#     comp_list[[paste(id_szk, id_kl, sep = "_")]]$suek = look_suek
+#     comp_list[[paste(id_szk, id_kl, sep = "_")]]$cke = look_spr
+# }
+# 
+# 
+# comp_list
+
+
+```
+
+
+
+
+
+
+
+
+
+
