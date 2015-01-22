@@ -18,6 +18,31 @@
 #'
 #'
 join_var = function(x, y, askBy.x, askBy.y=askBy.x, joinVar, auto = TRUE) {
+  # sprawdż poprawność argumentów
+  miss_args = c(missing(x), missing(y), missing(askBy.x), missing(joinVar))
+  if (any(miss_args)) {
+    err_msg = c("bazy x", "bazy y", "klucza do łączenia (askBy.x)",
+                paste0("zmiennej, której wartości ",
+                       "mają być dołączone do zbioru x (joinVar)!"))
+    stop("Nie podano:\n", paste(err_msg[miss_args], collapse = "\n"))
+  }
+  
+  if (length(joinVar) != 1) {
+    stop("Można przyłączyć tylko jedną zmienną (joinVar)!")
+  }
+  
+  if (length(askBy.x) != length(askBy.y)) {
+    stop("Zadeklarowano różną liczbę zmiennych w kluczach (askBy.x, askBy.y)")
+  }
+  
+  if(any(!(askBy.x %in% names(x))) && any(!(askBy.y %in% names(y)))) {
+    stop("Zadeklarowany klucz do łączenia",
+         "nie występuje w przynajmniej jednej z baz")
+  }
+  
+  # liczba zmiennych tworzących klucz
+  ask_ln = length(askBy.x)
+  
   # Nazwa nowej zmiennej
   new_var = paste0(joinVar, "_new")
   # Sprawdza, czy nowa zmienna jest już w x
@@ -57,15 +82,22 @@ join_var = function(x, y, askBy.x, askBy.y=askBy.x, joinVar, auto = TRUE) {
           ". Przechodzę do następnego wiersza.\n")
       next
     }
+    # określenie wierszy w y pasujących do wiersza z x
     search_term = x[i, askBy.x]   # poszukiwana wartość
-    query_result = y[y[, askBy.y] == search_term, ] # pasujące wiersze z y
+    # klucz ma długość 1
+    if (ask_ln == 1) {
+      query_result = y[y[, askBy.y] == search_term, ] # pasujące wiersze z y
+    # klucz jest dłuższy 
+    } else {
+      query_result_mt = apply(y[, askBy.y], 1, `==`, search_term)
+      query_result = y[colSums(query_result_mt, na.rm = TRUE) == ask_ln, ]
+    }
     nqr = nrow(query_result)    # liczba wierszy w wyniku
-    
     # Brak pasujących wierszy w bazie y
     if(nqr < 1) {
       repeat {
-        cat("\nNie ma wiersza, dla którego", askBy.y, "wynosi",
-            search_term, "!!!\n")
+        cat("\nNie ma wiersza, dla którego", askBy.y, "wynosi (odpowiednio)",
+            unlist(search_term), "!!!\n")
         if(!auto) {
           cat("\nWpisz q, żeby wyjść",
               "lub wpisz n, żeby przejść do następnego wiersza.\n")
