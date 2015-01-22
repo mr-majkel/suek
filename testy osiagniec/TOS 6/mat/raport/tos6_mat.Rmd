@@ -4,7 +4,8 @@ author: "Michał Modzelewski"
 csl: apa.csl
 output:
   html_document:
-    theme: united
+    css: moj_styl.css
+    fig_caption: yes
   pdf_document:
     toc: no
   word_document: default
@@ -79,7 +80,7 @@ knitr::kable(kotw, row.names = FALSE,
 
 W teście znajdują się zarówno zadania zamknięte jak i otwarte. Zdecydowana większość zadań jest oceniania dychotomicznie. Do ich analizy został wykorzystany prosty model logistyczny (*simple logistic model*, SLM). Wybrane zadania otwarte są jednak oceniane na skali 0-1-2. Do ich analizy zastosowano model *partial credit model* (PCM). Do analizy DIF wykorzystano wieloaspektowy model Rascha (*Mulit-faceted Rasch model*, MFR). Pakiet `TAM` umożliwia elastyczne specyfikowanie tych modeli, wykorzystując uogólnioną formę modelu Rascha opisaną w [@adams_multidimensional_1997]. Do estymacji tego modelu wykorzystywana jest metoda brzegowej najwyższej wiarygodności (*marginal maximum likelihood*, MML). Metoda ta wymaga założenia o kształcie rozkładu umiejętności w badanej populacji. W pakiecie `TAM` rozkład ten przybliżany jest za pomocą rozkładu normalnego (o estymowanej średniej i odchyleniu standardowym).
 
-# Sprawdzenie dopasowania
+# Ogólne sprawdzenie dopasowania danych do modelu Rascha
 Skalowanie zaczniemy od próby dopasowania danych do modelu Rascha. W związku z tym, że analizy chcemy wykonać tylko na podzbiorze zadań (zadania unikalne dla wersji *plus* zadania kotwiczące), potrzebujemy określić, które zmienne chcemy uwzględnić w analizach.
 
 ```{r}
@@ -93,7 +94,7 @@ items1
 
 Możemy już wyestymować pierwszy model. Do tego celu wykorzystamy funkcję `tam.mml.mfr()`.
 
-``` {r, echo = FALSE, results = 'hide'}
+``` {r, echo = FALSE, results = 'hide', cache = TRUE}
 # przygotowanie macierzy do wyestymowania modelu
 des2 = designMatrices.mfr2(resp = mat_all_r[, items1],
                             formula = ~ item + item:step)
@@ -171,7 +172,7 @@ round(mod0_fit[, c(1:5, 7:9)], 3)
 
 Trzymając się zwyczajowych kryteriów dopuszczalnego dopasowania, tj. przedziału wartości <0,8; 1,2>, prawie wszystkie zadania, na pierwszy rzut oka, są dobrze dopasowane. Jedynie zadania `r out0` posiadają wartości statystyki *outfit* wykraczające poza ten zakres.
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, fig.cap= "Wykres skrzynkowy dla miar dopasowania zadań w teście matematycznym TOS6"}
 # wykres pudełkowy dla miar dopasowania
 mod0_md = melt(data.frame(item = dimnames(mod0_fit)[[1]], mod0_fit), "item")
 mod0_fit_stat = mod0_md[grep("fit$", mod0_md$variable), ]
@@ -185,15 +186,18 @@ boxy
 
 Przyjrzyjmy się im bliżej. Poniżej znajdują się wykresy z krzywą dla przewidywanego wyniku dla tych zadań z naniesioną krzywą empiryczną.
 
-```{r, results = "hide", echo = FALSE}
+```{r, results = "hide", echo = FALSE, fig.cap = c("Krzywa przewidywanego wyniku w zależności od poziomu umiejętności dla zad.X")}
 # wykresy ESC dla zadań
-plot(mod0, match(out0, mod0$item$item), ngroups = 10, export = FALSE,
+plot(mod0, match(out0[1], mod0$item$item), ngroups = 10, export = FALSE,
      observed = TRUE)
+# plot(mod0, match(out0[2], mod0$item$item), ngroups = 10, export = FALSE,
+#      observed = TRUE)
 ```
 
-Widzimy, że zadania słabiej różnicują uczniów niż by to wynikało z modelu Rascha. Oba zadania są zadaniami wielokrotnego wyboru. Być może trochę światła na ich funkcjonowanie rzuci analiza dystraktorów.
+Widzimy, że zadania słabiej różnicują uczniów niż by to wynikało z modelu Rascha. Oba zadania są zadaniami wielokrotnego wyboru. Być może trochę światła na ich funkcjonowanie rzuci analiza dystraktorów. Poniżej zamieszczone są wykresy z krzywymi empirycznymi dla wszystkich kodów obecnych w bazie. Odpowiedziom A, B, C, D przyporządkowane zostały kody, odpowiednio, 1, 2, 3 i 4.
 
-```{r, results = "hide", echo = FALSE}
+```{r, results = "hide", echo = FALSE, fig.cap ="Krzywe empiryczne dla kategorii zadań XXX"}
+#fig.cap = c(paste("Krzywe empiryczne dla kategorii zadania", out0[1]), paste("Krzywe empiryczne dla kategorii zadania", out0[2]))
 # analiza KTT dla dwóch zadań
 # wyliczenie pv dla modelu
 mod0_pv = tam.pv(mod0)$pv
@@ -201,10 +205,46 @@ mod0_pv = tam.pv(mod0)$pv
 # wyliczenie statystyk KTT
 ctt0 = tam.ctt(mat_all[, items1], pvscores = mod0_pv[, -1])
 
-# 
-plotctt(mat_all[, out0], theta = mod0$person$EAP, Ncuts = 8)
+# wykresy z krzywmi empirycznymi
+plotctt(mat_all[, out0, drop = FALSE], theta = mod0_pv[, 2], Ncuts = 8)
 
 ```
+
+Dla zadania `r out0[1]` poprawną odpowiedzią jest odpowiedź C (kod 3), natomiast dla zadania `r out0[2]` - B (kod 2). Theta (estymowana za pomocą PV) została podzielona na 8 równolicznych przedziałów. Dla tak określonych grup wyników wyliczone zostały odsetki uczniów, którzy otrzymali poszczególne kody w zadaniu. Dla obu zadań można wskazać dystraktor, który ma dużej części niemalejące prawdopodobieństwo wyboru (dopiero w ostatniej grupie wyników zaczyna spadać). I tak, dla zadania `r out0[1]` taką niewzruszoną konkurencję dla poprawnej odpowiedzi stanowi odpowiedź A (kod 1), natomiast dla zadania `r out0[2]` to odpowiedź C (kod 3). Na tym etapie analiz postanowiono jednak nie usuwać tych zadań.
+
+## Uporządkowanie kategorii dla zadań wielokategorialnych
+
+Dla zadań wielokategorialnych (ocenianych na skalach dłuższych niż 0-1) sprawdzono uporządkowanie poszczególnych progów wykonania zadania. W teście matematycznym są `r length(grep("step1", rownames(mod0$xsi)))` zadania oceniane na skali 0-1-2. Poniżej zaprezentowane są wykresy z krzywymi informacyjnymi dla tych zadań.
+
+```{r, echo = FALSE, results = "hide"}
+# icc dla zadań wielokategorialnych
+plot(mod0, grep("KMA_10|KMA_22", mod0$item$item),
+     type = "items", export = FALSE)
+
+```
+
+Dla obu zadań kategoria 1 (na wykresie Cat2) dla żadnego zakresu umiejętności nie jest kategorią modalną (najczęściej wybieraną). Co za tym idzie, oszacowane parametry $\delta$, czyli punkty na skali umiejętności, dla których przecinają się krzywe informacyjne dla kolejnych kategorii punktowych (0 i 1, 1 i 2), są nieuporządkowane. Łatwiejsze jest "przejście" między kategorią 1 i 2 niż pomiedzy 0 i 1.
+
+Sytuację te można także zobrazować za pomocą tzw. progów Thurstone'a (*Thurstonian tresholds*). Progi te odpowiadają pozycji na skali umiejętności, dla których wartość funkcji prawdopodobieństwa uzyskania danej kategorii lub wyższej wynosi 50%. W przypadku zadania ocenianego na skali 0-1-2 analizowane są dwie krzywe: jedna przedstawiąjąca zależność pomiędzy umiejętnością a prawdopodobieństwem uzyskania kategorii 1 lub 2, a druga - uzyskania kategorii 2.
+
+```{r, echo = FALSE, results = "hide"}
+# tresholdy dla mod0
+mod0_tt = tam.threshold(mod0)
+head(mod0_tt)
+# ttc dla zadań wielokategorialnych
+
+
+
+```
+
+# Analiza zróżnicowanego funkcjonowania zadania (DIF) ze względu na wersję
+
+W teście matematycznym znajduje się `r nrow(kotw)` zadań kotwiczących. Poprzednie skalowanie bazowało na założeniu, że zadania te funkcjonują tak samo w obu wersjach testu. W tej części raportu założenie to zostanie sprawdzone.
+
+```{r, echo = FALSE, results = "hide"}
+
+```
+
 
 
 
