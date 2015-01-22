@@ -5,6 +5,7 @@
 *.bak
 *.png
 *.csv
+*.xls*
 *.dat
 *.pdf
 *.doc*
