@@ -13,11 +13,13 @@
 #' @param askBy.x character z nazwą zmiennej w bazie x, po której wyszukujemy w y.
 #' @param askBy.y character z nazwą zmiennej w bazie y, która odpowiada askBy.x.
 #' @param joinVar character z nazwą zmiennej w bazie y, której wartość ma być wstawiona z y do x.
+#' @param na_rm.y logical, czy usunąć niekompletne wiersze z y? Domyślnie FALSE.
 #' @param auto  logical, czy automatycznie nadpisywać jednoznaczne trafienia i
-#' przechodzić dalej dla niejednoznacznych? Domyślnie TRUE.
+#' przechodzić dalej dla niejednoznacznych? Nie wyświetla komunikatów w konsoli.
+#' Domyślnie TRUE.
 #'
-#'
-join_var = function(x, y, askBy.x, askBy.y=askBy.x, joinVar, auto = TRUE) {
+join_var = function(x, y, askBy.x, askBy.y=askBy.x, joinVar, na_rm.y = FALSE,
+                    auto = TRUE, quiet = auto) {
   # sprawdż poprawność argumentów
   miss_args = c(missing(x), missing(y), missing(askBy.x), missing(joinVar))
   if (any(miss_args)) {
@@ -35,7 +37,7 @@ join_var = function(x, y, askBy.x, askBy.y=askBy.x, joinVar, auto = TRUE) {
     stop("Zadeklarowano różną liczbę zmiennych w kluczach (askBy.x, askBy.y)")
   }
   
-  if(any(!(askBy.x %in% names(x))) && any(!(askBy.y %in% names(y)))) {
+  if(any(!(askBy.x %in% names(x))) || any(!(askBy.y %in% names(y)))) {
     stop("Zadeklarowany klucz do łączenia",
          "nie występuje w przynajmniej jednej z baz")
   }
@@ -47,23 +49,27 @@ join_var = function(x, y, askBy.x, askBy.y=askBy.x, joinVar, auto = TRUE) {
   new_var = paste0(joinVar, "_new")
   # Sprawdza, czy nowa zmienna jest już w x
   if (new_var %in% names(x)) { 
-    repeat {
-      cat("\n", new_var, "znajduje się już w bazie.",
-          "Czy chcesz nadpisać wartości zmiennej (t/n)?\n")
-      choice0 = readline(">>> ")
-      # Nadpisuje wiersze z wartością na nowej zmiennej
-      if (choice0 == "t"){
-        x[, new_var] = NA
-        filled_cases = 0
-        break
-        # Pomija wiersze z wartością na nowej zmiennej
-      } else if (choice0 == "n") {
-        filled_cases = which(complete.cases(x[, new_var]))
-        break
-        # Błędny input
-      } else {
-        cat("\n", choice0, "nie jest rozpoznawanym wyborem.\n")
+    if(!auto) {
+      repeat {
+        cat("\n", new_var, "znajduje się już w bazie.",
+            "Czy chcesz nadpisać wartości zmiennej (t/n)?\n")
+        choice0 = readline(">>> ")
+        # Nadpisuje wiersze z wartością na nowej zmiennej
+        if (choice0 == "t"){
+          x[, new_var] = NA
+          filled_cases = 0
+          break
+          # Pomija wiersze z wartością na nowej zmiennej
+        } else if (choice0 == "n") {
+          filled_cases = which(complete.cases(x[, new_var]))
+          break
+          # Błędny input
+        } else {
+          cat("\n", choice0, "nie jest rozpoznawanym wyborem.\n")
+        }
       }
+    } else {
+      filled_cases = which(complete.cases(x[, new_var]))
     }
     # Jeśli nie ma, to tworzy nową zmienną
   } else {
@@ -71,15 +77,29 @@ join_var = function(x, y, askBy.x, askBy.y=askBy.x, joinVar, auto = TRUE) {
     filled_cases = 0
   }
   
+  # zmiana kolumn w y na charactery
+  y[, askBy.y] = as.data.frame(lapply(y[, askBy.y, drop = FALSE],
+                                                    as.character),
+                               stringsAsFactors = FALSE)
+  # usunięcie braków danych z y
+  if(na_rm.y) {
+    na_ind = complete.cases(y[, askBy.y])
+    y = y[na_ind, ]
+  }
+  
   # Interaktywna pętla po wierszach w x
   for (i in 1:nrow(x)) {    
     # Wyświetla postęp
-    cat("\nWiersz", i, "/", nrow(x),"(",
-        round(i/nrow(x)*100),"%)","\n") 
+    if(!quiet) {
+      cat("\nWiersz", i, "/", nrow(x),"(",
+          round(i/nrow(x)*100),"%)","\n") 
+    }
     # Sprawdza, czy wiersz należy ominąć
     if (i %in% filled_cases) {
-      cat("\nWiersz posiada już wartość na zmiennej", new_var,
-          ". Przechodzę do następnego wiersza.\n")
+      if(!quiet) {
+        cat("\nWiersz posiada już wartość na zmiennej", new_var,
+            ". Przechodzę do następnego wiersza.\n")
+      }
       next
     }
     # określenie wierszy w y pasujących do wiersza z x
@@ -90,15 +110,19 @@ join_var = function(x, y, askBy.x, askBy.y=askBy.x, joinVar, auto = TRUE) {
     # klucz jest dłuższy 
     } else {
       query_result_mt = apply(y[, askBy.y], 1, `==`, search_term)
-      query_result = y[colSums(query_result_mt, na.rm = TRUE) == ask_ln, ]
+      if (length(query_result_mt) > 0) {
+        query_result = y[colSums(query_result_mt, na.rm = TRUE) == ask_ln, ]
+      } else {
+        query_result = y[0, ]
+      }
     }
     nqr = nrow(query_result)    # liczba wierszy w wyniku
     # Brak pasujących wierszy w bazie y
     if(nqr < 1) {
       repeat {
-        cat("\nNie ma wiersza, dla którego", askBy.y, "wynosi (odpowiednio)",
-            unlist(search_term), "!!!\n")
-        if(!auto) {
+        if (!auto) {
+          cat("\nNie ma wiersza, dla którego", askBy.y, "wynosi (odpowiednio)",
+              unlist(search_term), "!!!\n")
           cat("\nWpisz q, żeby wyjść",
               "lub wpisz n, żeby przejść do następnego wiersza.\n")
           choice1 = readline(">>> ")
@@ -126,9 +150,9 @@ join_var = function(x, y, askBy.x, askBy.y=askBy.x, joinVar, auto = TRUE) {
       result_value = query_result[1, joinVar]   
       # Dodaje nową wartość do x
       x[i, new_var] = result_value    
-      cat("\nDla wiersza ", i,
-          " znaleziono tylko jedną pasującą wartość w bazie",
-          as.character(quote(y)), ". Nadpisano automatycznie.\n")
+#       cat("\nDla wiersza ", i,
+#           " znaleziono tylko jedną pasującą wartość w bazie",
+#           as.character(quote(y)), ". Nadpisano automatycznie.\n")
       next
       # więcej niż jeden pasuje
     } else if (!auto) {
