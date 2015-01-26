@@ -17,9 +17,12 @@
 #' @param auto  logical, czy automatycznie nadpisywać jednoznaczne trafienia i
 #' przechodzić dalej dla niejednoznacznych? Nie wyświetla komunikatów w konsoli.
 #' Domyślnie TRUE.
+#' @param log_op character, specyfikuje czy warunek wyszukiwania ma bazować na
+#' koniunkcji ("AND", domyślnie), czy na alternatywie ("OR") wyszukiwanych
+#' wektorów wartości.
 #'
 join_var = function(x, y, askBy.x, askBy.y=askBy.x, joinVar, na_rm.y = FALSE,
-                    auto = TRUE, quiet = auto) {
+                    auto = TRUE, log_op = "AND") {
   # sprawdż poprawność argumentów
   miss_args = c(missing(x), missing(y), missing(askBy.x), missing(joinVar))
   if (any(miss_args)) {
@@ -90,32 +93,46 @@ join_var = function(x, y, askBy.x, askBy.y=askBy.x, joinVar, na_rm.y = FALSE,
   # Interaktywna pętla po wierszach w x
   for (i in 1:nrow(x)) {    
     # Wyświetla postęp
-    if(!quiet) {
+    if(!auto) {
       cat("\nWiersz", i, "/", nrow(x),"(",
           round(i/nrow(x)*100),"%)","\n") 
     }
     # Sprawdza, czy wiersz należy ominąć
     if (i %in% filled_cases) {
-      if(!quiet) {
+      if(!auto) {
         cat("\nWiersz posiada już wartość na zmiennej", new_var,
             ". Przechodzę do następnego wiersza.\n")
       }
       next
     }
     # określenie wierszy w y pasujących do wiersza z x
-    search_term = x[i, askBy.x]   # poszukiwana wartość
-    # klucz ma długość 1
-    if (ask_ln == 1) {
-      query_result = y[y[, askBy.y] == search_term, ] # pasujące wiersze z y
-    # klucz jest dłuższy 
-    } else {
-      query_result_mt = apply(y[, askBy.y], 1, `==`, search_term)
-      if (length(query_result_mt) > 0) {
-        query_result = y[colSums(query_result_mt, na.rm = TRUE) == ask_ln, ]
-      } else {
-        query_result = y[0, ]
-      }
+    
+    search_term = as.list(x[i, askBy.x, drop = FALSE])   # poszukiwana wartość
+    print(search_term)
+    searched_list = as.list(y[, askBy.y, drop = FALSE])  # lista wektorów w y
+    print(searched_list)
+    result_list = Map(`==`, search_term, searched_list)  # lista z trafieniami
+    print(result_list)
+    if (log_op == "AND") {
+      query_ind = unlist(Reduce(function(x, y) {x && y}, result_list))
+    } else if(log_op == "OR") {
+      query_ind = unlist(Reduce(function(x, y) {x && y}, result_list))
     }
+    print(query_ind)
+    cat("\n")
+    query_result = y[query_ind, ]
+#     # klucz ma długość 1
+#     if (ask_ln == 1) {
+#       query_result = y[y[, askBy.y] == search_term, ] # pasujące wiersze z y
+#     # klucz jest dłuższy 
+#     } else {
+#       query_result_mt = apply(y[, askBy.y], 1, `==`, search_term)
+#       if (length(query_result_mt) > 0) {
+#         query_result = y[colSums(query_result_mt, na.rm = TRUE) == ask_ln, ]
+#       } else {
+#         query_result = y[0, ]
+#       }
+#     }
     nqr = nrow(query_result)    # liczba wierszy w wyniku
     # Brak pasujących wierszy w bazie y
     if(nqr < 1) {
