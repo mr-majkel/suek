@@ -13,9 +13,12 @@ bibliography: Rasch.bib
 ---
 
 ``` {r include = FALSE, cache = FALSE}
-setwd(paste0("C:\\Users\\Uzytkownik\\Documents\\SUEK\\",
-             "Projects\\suek\\testy osiagniec\\TOS 6\\mat"))
+
 wd = getwd()
+wd_len = sapply(strsplit(wd, "/"), length)
+wd = paste(sapply(strsplit(wd, "/"), "[", 1:(wd_len - 1)), collapse = "/")
+setwd(wd)
+
 
 options("stringsAsFactors" = FALSE)
 options("scipen" = 7)
@@ -25,7 +28,7 @@ library(TAM)
 library(ggplot2)
 library(reshape2)
 # library(xtable)
-# library(plyr)
+library(plyr)
 
 source("skrypty\\pomocnicze\\difWang.R")
 source("skrypty\\pomocnicze\\sumPart.R")
@@ -65,7 +68,7 @@ head(mat_all[, 1:10])
 head(mat_all_r[, 1:10])
 ```
 
-Każdy wiersz odpowiada jednemu uczniowi. Na początku zbioru znajdują się zmienne identyfikujące i opisowe. Na dalszych miejscach znajdują się zmienne odpowiadające kolejnym zadaniom w teście. W skład tej grupy zmiennych wchodzą zadania z wersji A i B testu oraz zadania kotwiczące. Nazwy zmiennych kotwiczących powstały poprzez dodanie przedrostka "K" do nazwy zadania kotwiczącego w wersji A (np. `r paste0("K", kotw[1, 1])`). Na potrzeby analiz IRT kody '9' (brak odpowiedzi) były traktowane jako odpowiedzi błędne.
+Każdy wiersz odpowiada jednemu uczniowi. Na początku zbioru znajdują się zmienne identyfikujące i opisowe. Na dalszych miejscach znajdują się zmienne odpowiadające kolejnym zadaniom w teście. W skład tej grupy zmiennych wchodzą zadania z wersji A i B testu oraz zadania kotwiczące. Nazwy zmiennych kotwiczących powstały poprzez dodanie przedrostka "K" do nazwy zadania kotwiczącego w wersji A (np. `r paste0("K", kotw[1, 1])`). Na potrzeby analiz IRT kody '9' (brak odpowiedzi) były traktowane jako odpowiedzi błędne, chyba że stanowiły serię opuszczeń pod koniec zeszytu. W takim przypadku, podczas estymacji parametrów zadań (ale nie oszacowania poziomów umiejętności uczniów), seria braków odpowiedzi była traktowana jako systemtatyczny brak danych (`NA`), z wyłączeniem pierwszej "9" z serii.
 
 ## Krótko o teście
 
@@ -162,26 +165,36 @@ Ta ostatnia informacja jest szczególnie ważna w kontekście analizy oszacowań
 
 ```{r, echo = FALSE}
 # wyliczenie miar dopasowania
-fit0 = tam.fit(mod0, progress = FALSE)
+fit0 = tam.fit(mod0, progress = FALSE)$itemfit
+
 # scalenie zbiorów danych
-mod0_fit = cbind(mod0$xsi, fit0)
+mod0$xsi$parameter = rownames(mod0$xsi)
+mod0_fit = merge(mod0$xsi, fit0)
 
 # niedopasowane zadania <0,8 lub >1,2
-out0 = rownames(mod0_fit)[(mod0_fit[, 3] < 0.8) | (mod0_fit[, 3] > 1.2)]
-in0 = rownames(mod0_fit)[(mod0_fit[, 7] < 0.8) | (mod0_fit[, 7] > 1.2)]
-round(mod0_fit[, c(1:5, 7:9)], 3)
+out0 = mod0_fit[(mod0_fit[, 4] < 0.8) | (mod0_fit[, 4] > 1.2), "parameter"]
+in0 = mod0_fit[(mod0_fit[, 8] < 0.8) | (mod0_fit[, 8] > 1.2), "parameter"]
+
+round_df = function(df, ...) {
+    col_class = sapply(df, class)
+    col_num = names(grep("numeric", col_class, value = TRUE))
+    df[, col_num] = round(df[, col_num], ...)
+    df
+  }
+
+round_df(mod0_fit[, c(1:6, 8:10)], 3)
 ```
 
 Trzymając się zwyczajowych kryteriów dopuszczalnego dopasowania, tj. przedziału wartości <0,8; 1,2>, prawie wszystkie zadania, na pierwszy rzut oka, są dobrze dopasowane. Jedynie zadania `r out0` posiadają wartości statystyki *outfit* wykraczające poza ten zakres.
 
 ```{r, echo = FALSE, fig.cap= "Wykres skrzynkowy dla miar dopasowania zadań w teście matematycznym TOS6"}
 # wykres pudełkowy dla miar dopasowania
-mod0_md = melt(data.frame(item = dimnames(mod0_fit)[[1]], mod0_fit), "item")
+mod0_md = melt(mod0_fit, "parameter")
 mod0_fit_stat = mod0_md[grep("fit$", mod0_md$variable), ]
 boxy = ggplot(mod0_fit_stat,
               aes(x = variable, y = value)) + ylim(0.5, 1.6) + geom_boxplot() +
        geom_point(data = mod0_fit_stat[mod0_fit_stat$value > 1.2,]) +
-       geom_text(aes(label = item),
+       geom_text(aes(label = parameter),
                  data = mod0_fit_stat[mod0_fit_stat$value > 1.2,], hjust = -0.1)
 boxy
 ```
@@ -210,7 +223,8 @@ ctt0 = tam.ctt(mat_all[, items1], pvscores = mod0_pv[, -1])
 
 # wykresy z krzywmi empirycznymi
 # layout(t(1:2))
-plotctt(mat_all[, out0, drop = FALSE], theta = mod0_pv[, 2], Ncuts = 8)
+plotctt(mat_all[, out0[1], drop = FALSE], theta = mod0_pv[, 2], Ncuts = 8)
+plotctt(mat_all[, out0[2], drop = FALSE], theta = mod0_pv[, 2], Ncuts = 8)
 
 ```
 
@@ -256,27 +270,27 @@ sumPart("modele/mod2__SUMMARY.Rout", c(2:4))
 Dopasowanie zadań zaadniczo się nie zmieniło. Zad MA\_20 wciąż wykazuje niższą niż przewidywana dyskryminację.
 
 ```{r, echo = FALSE}
-# wyliczenie miar dopasowania
-fit2 = tam.fit(mod2, progress = FALSE)
 # scalenie zbiorów danych
-mod2_fit = cbind(mod2$xsi, fit2)
+mod2$xsi$parameter = rownames(mod2$xsi)
+mod2_fit = merge(mod2$xsi, fit0)
 
 # niedopasowane zadania <0,8 lub >1,2
-out2 = rownames(mod2_fit)[(mod2_fit[, 3] < 0.8) | (mod2_fit[, 3] > 1.2)]
-in2 = rownames(mod2_fit)[(mod2_fit[, 7] < 0.8) | (mod2_fit[, 7] > 1.2)]
-round(mod2_fit[, c(1:5, 7:9)], 3)
+out2 = mod2_fit[(mod2_fit[, 4] < 0.8) | (mod2_fit[, 4] > 1.2), "parameter"]
+in2 = mod2_fit[(mod2_fit[, 8] < 0.8) | (mod2_fit[, 8] > 1.2), "parameter"]
+
+round_df(mod2_fit[, c(1:6, 8:10)], 3)
 ```
 
 ```{r, echo = FALSE, fig.cap= "Wykres skrzynkowy dla miar dopasowania zadań w teście matematycznym TOS6"}
 # wykres pudełkowy dla miar dopasowania
-mod2_md = melt(data.frame(item = dimnames(mod2_fit)[[1]], mod2_fit), "item")
+mod2_md = melt(mod2_fit, "parameter")
 mod2_fit_stat = mod2_md[grep("fit$", mod2_md$variable), ]
 boxy2 = ggplot(mod2_fit_stat,
               aes(x = variable, y = value)) + ylim(0.5, 1.6) + 
        geom_boxplot() +
        geom_point(data = mod2_fit_stat[(mod2_fit_stat$value > 1.2) |
                                          (mod2_fit_stat$value < 0.8),]) +
-       geom_text(aes(label = item),
+       geom_text(aes(label = parameter),
                  data = mod2_fit_stat[(mod2_fit_stat$value > 1.2) |
                                          (mod2_fit_stat$value < 0.8),],
                  hjust = -0.1) +
@@ -340,15 +354,45 @@ setwd(wd)
 sumPart("modele/mod3__SUMMARY.Rout", c(2:4))
 ```
 
-Analizie poddane będą jednak tylko zadania kotwiczące i oszacowane różnice w trudności ze względu na wersję.
+Analizie poddane będą jednak tylko zadania kotwiczące i oszacowane różnice w trudności ze względu na wersję. Otrzymane oszacowania należy pomnożyć przez dwa, dla otrzymania całkowitej różnicy w oszacowaniu trudności zadań pomiędzy wersjami.
 
-```{r}
-mod3$xsi[grep("^K.*A$|KMA_10:wersjaA:step1|KMA_22:wersjaA:step1",
-              rownames(mod3$xsi)), ]
+```{r, echo = FALSE}
+round(mod3$xsi[grep("^K.*A$|KMA_10:wersjaA:step1|KMA_22:wersjaA:step1",
+                    rownames(mod3$xsi)), ], 3)
+```
+
+Dla większości zadań efekty związane z różnicami funkcjonowania pomiędzy wersjami są niewielkie. Tylko zadanie KMA\_24 i oszacowanie dla progów dla zadania KMA\_22 wykazują róźnicę w trudności pomiędzy wersjami większą od 0,2 logita (odpwoiednio, na korzyść wersji A i wersji B). Zadanie te są jednak dosyć trudne i duża różnica w logitach nie przekłada się bezpośrednio na prawdopodobieństwo odpowiedzi. Przyjrzyjmy się zatem tym ostatnim dla tych problematycznych zadań.
+
+```{r, echo = FALSE, results = "hide", warning = FALSE}
+
+items_kotw = paste0("K", kotw[, 1])
+
+mod3_pv = tam.pv(mod3)$pv
+
+# KTT dla mfr, dif na wersję
+ctt3 = tam.ctt(mat_all[, items_kotw], pvscores = mod3_pv[, -1],
+               group = mat_all$wersja, progress = FALSE)
+
+print_ctt = function(ctt_df, item, group = 1) {
+    ctt_col = grep("item$|group|PV|N|Categ|Freq", names(ctt_df))
+    ctt_df[(ctt_df$item == item) & (ctt_df$group == group), ctt_col]
+  }
+
+```
+
+```{r, echo = FALSE}
+cat("Zad. KMA_22\n")
+round_df(print_ctt(ctt3, "KMA_22", "A"), 3)
+round_df(print_ctt(ctt3, "KMA_22", "B"), 3)
+
+cat("Zad. KMA_24\n")
+round_df(print_ctt(ctt3, "KMA_24", "A"), 3)
+round_df(print_ctt(ctt3, "KMA_24", "B"), 3)
+
 ```
 
 
-# Podsumowanie uwag do dalszych zastsowań testu
+# Podsumowanie uwag do dalszych zastosowań testu
 
 1. Usunąć zad. MB_25 (nietrafne).
 
