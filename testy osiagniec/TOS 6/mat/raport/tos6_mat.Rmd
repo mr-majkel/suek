@@ -3,11 +3,11 @@ title: "Analiza Rascha dla testu matematycznego TOS6"
 author: "Michał Modzelewski"
 csl: apa.csl
 output:
+  pdf_document:
+    toc: no
   html_document:
     css: moj_styl.css
     fig_caption: yes
-  pdf_document:
-    toc: no
   word_document: default
 bibliography: Rasch.bib
 ---
@@ -327,7 +327,7 @@ mod2_tt[grep("KMA_10|KMA_22", rownames(mod2_tt)),]
 
 Takie wyniki oznaczają, że bardzo mały odsetek uczniów uzyskał za te zadania 1 punkt. Można to odczytywać jako sygnał na rzecz redundancji kategorii 1 w kluczu. Z drugiej jednak strony, dobre dopasowanie zadań wielokategrialnych do przewidywań modelu nie wymusza działań naprawczych. Dodatkowo, lektura odpowiednich zapisów klucza kodowego nie rodzi podejrzeń co do ich zrozumiałości i trafności. Po dyskusji w zespole postanowiono nie modyfikować klucza. 
 
-# Analiza zróżnicowanego funkcjonowania zadania (DIF) ze względu na wersję
+## Analiza zróżnicowanego funkcjonowania zadania (DIF) ze względu na wersję
 
 W teście matematycznym znajduje się `r nrow(kotw)` zadań kotwiczących. Poprzednie skalowanie bazowało na założeniu, że zadania te funkcjonują tak samo w obu wersjach testu. W tej części raportu założenie to zostanie sprawdzone. Do tego celu wyestymowano model, w którym dopuszczono zróżnicowane oszacowanie parametrów zadań w obu wersjach testu.
 
@@ -361,7 +361,7 @@ round(mod3$xsi[grep("^K.*A$|KMA_10:wersjaA:step1|KMA_22:wersjaA:step1",
                     rownames(mod3$xsi)), ], 3)
 ```
 
-Dla większości zadań efekty związane z różnicami funkcjonowania pomiędzy wersjami są niewielkie. Tylko zadanie KMA\_24 i oszacowanie dla progów dla zadania KMA\_22 wykazują róźnicę w trudności pomiędzy wersjami większą od 0,2 logita (odpwoiednio, na korzyść wersji A i wersji B). Zadanie te są jednak dosyć trudne i duża różnica w logitach nie przekłada się bezpośrednio na prawdopodobieństwo odpowiedzi. Przyjrzyjmy się zatem tym ostatnim dla tych problematycznych zadań.
+Dla większości zadań efekty związane z różnicami funkcjonowania pomiędzy wersjami są niewielkie. Tylko zadanie KMA\_24 i oszacowanie dla progów dla zadania KMA\_22 wykazują róźnicę w trudności pomiędzy wersjami większą od 0,2 logita (odpowiednio, na korzyść wersji A i wersji B). Zadanie te są jednak dosyć trudne i duża różnica w logitach nie przekłada się na duż różnicę prawdopodobieństwa odpowiedzi. Przyjrzyjmy się zatem tym ostatnim dla zadań kotwiczących.
 
 ```{r, echo = FALSE, results = "hide", warning = FALSE}
 
@@ -380,20 +380,98 @@ print_ctt = function(ctt_df, item, group = 1) {
 
 ```
 
-```{r, echo = FALSE}
-cat("Zad. KMA_22\n")
-round_df(print_ctt(ctt3, "KMA_22", "A"), 3)
-round_df(print_ctt(ctt3, "KMA_22", "B"), 3)
+```{r, echo = FALSE, warning = FALSE}
+for (ik in items_kotw) {
+    cat(paste0("\nZad. ", ik, "\n"))
+    print(round_df(print_ctt(ctt3, ik, "A"), 3))
+    print(round_df(print_ctt(ctt3, ik, "B"), 3))
+  }
 
-cat("Zad. KMA_24\n")
-round_df(print_ctt(ctt3, "KMA_24", "A"), 3)
-round_df(print_ctt(ctt3, "KMA_24", "B"), 3)
+```
+
+Różnice w odsetkach uczniów uzyskujących poszczegolne kategorie pomiędzy wersjami testu są minimalne (wahają się w granicach 2-3 pkt. proc.). W związku z tym, można uznać, że wszystkie zadania kotwiczące dobrze spełniaja swoją funkcję.
+
+##  Analiza zróżnicowanego funkcjonowania zadania (DIF) ze względu na płeć
+
+Ważnym aspektem każdego pomiaru jest inwariantność narzędzia ze względu na różne cechy badanych obiektów. W przypadku testów osiągnięć szkolnych, wyniki uczniów często analizowane są w podziale na płeć. Oszacowanie różnic pomiędzy wynikami chłopców i dziewczynek jest możliwe tylko wtedy, gdy test, którego wyniki analizujemy, nie jest systematycznie obciążony na korzyść którejś z płci ponad to, co możemy przypisać faktycznym różnicom w poziomie umiejętności.
+
+Na potrzeby analiz DIF ze względu na płeć policzono model, w którym dla każdego zadania wyliczono różnice w oszacowaniu trudności po uwzględnieniu średniej różnicy w poziomach umiejętności między chłopcami i dziewczynkami.
+
+```{r, echo = FALSE, results = "hide"}
+# sprawdzenie międzygrupowej inwariantności (DIF na wersję)
+formulaA_difplec = ~ item + item:step + kobieta*item + kobieta:item:step
+# nazwy itemów kotwiczących
+# items_kotw = paste0("K", kotw[, 1])
+head(mat_all_r)
+# policzenie modelu multi-faceted rasch, pełna wariantność parametrów
+mod4 = tam.mml.mfr(mat_all_r[, items2],
+                   facets = mat_all_r[, "kobieta", drop = FALSE],
+                   formulaA = formulaA_difplec,
+                   control = list(QMC = FALSE,
+                                  increment.factor=1.01,
+                                  fac.oldxsi=.05,
+                                  delete.red.items = TRUE))
+setwd(wd)
+summary(mod4, "modele/mod4")
+```
+
+```{r, echo = FALSE}
+setwd(wd)
+sumPart("modele/mod4__SUMMARY.Rout", c(2:4))
+```
+
+Poniżej przedstawiono oszacowania różnic w trudności ze względu na płeć (chłopcy są grupą odniesienia).
+
+```{r, echo = FALSE}
+dif_ind = grep("kobieta0$|KMA_22:kobieta0:step1|KMA_10:kobieta0:step1",
+               rownames(mod4$xsi))
+dif_xsi = round(mod4$xsi[dif_ind, ], 3)
+```
+
+Swoja uwagę skupimy na zadaniach, które prezentują całkowity efekt różnicy pomiędzy płciami większy od 0,4 logita.
+
+```{r, echo = FALSE}
+dif_its = rownames(dif_xsi)[abs(dif_xsi$xsi * 2) > 0.4]
+items_dif = sapply(strsplit(dif_its, ":"), "[", 1)
+dif_xsi[dif_its, ]
+```
+
+Jak te różnice przekładaja się na odsetki poszczególnych kategorii (grupa 0?
+
+```{r, results = "hide", warning = FALSE}
+mod4_pv = tam.pv(mod4)$pv
+
+# KTT dla mfr, dif na wersję
+ctt4 = tam.ctt(mat_all[, items_dif], pvscores = mod4_pv[, -1],
+               group = mat_all$plec, progress = FALSE)
+```
+
+```{r, echo = FALSE, warning = FALSE}
+for (ik in items_dif) {
+    cat(paste0("\nZad. ", ik, "\n"))
+    print(round_df(print_ctt(ctt4, ik, "M"), 3))
+    print(round_df(print_ctt(ctt4, ik, "K"), 3))
+  }
+
+```
+
+Dla opisania zadania jako funkcjonującego w różny sposób dla płci przyjęto konieczność wystapienia dwóch warunków:
+
+- zaobserwowania wysokiej różnicy w oszacowaniach trudności zadań dla płci
+- możliwości przypisania różnic w szansach poradzenia sobie z zadaniem specyficznym uwarunkowaniom płci (więcej treningu, specyficzna wiedza).
+
+Po analizie treściowej zadań, tylko zadanie MA\_7 ("Żaglówka znajduje się w odległości 30 m od linii mety i płynie z prędkością 4 m/s. Po jakim czasie znajdzie się ona na mecie?") zostało uznane jako zadanie z DIF na płeć. Zadanie to dotyczy przeliczania prędkości, drogi oraz czasu. Istnieje podejrzenie, że chłopcy przechodzą swoisty trening w takich obliczeniach ze względu na fakt, że częściej w obszarze zainteresowań chłopców znajdują się samochody i ich osiągi.
+
+Na potrzeby wyliczania wyników uczniów, parametr trudności dla zadania MA\_7 będzie oszacowywany oddzielnie dla płci. W efekcie zadanie to będzie łatwiejsze dla chłopców niż dla dziewczynek.
+
+```{r}
 
 ```
 
 
 # Podsumowanie uwag do dalszych zastosowań testu
 
-1. Usunąć zad. MB_25 (nietrafne).
+1. Usunąć zad. MB\_25 (nietrafne).
+2. Trudność zadania MA\_7 wyliczana oddzielnie dla chłopców i dziewczynek.
 
 # Literatura cytowana
