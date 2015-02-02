@@ -15,6 +15,7 @@ source("skrypty\\pomocnicze\\writeKeySingle.R")
 source("skrypty\\pomocnicze\\writeKey.R")
 source("skrypty\\pomocnicze\\readKey.R")
 source("skrypty\\pomocnicze\\recode.R")
+source("skrypty\\pomocnicze\\showNotReached.R")
 
 # wczytanie baz
 mat_a = read.csv2("bazy oryg\\SUEK7_TOS6 Matematyka A zasadniczeDane.csv")
@@ -43,6 +44,7 @@ key_b = c(3,4,3,4,3,3,2,2,3,2,2,3,1,3,4,3,2)
 # stworzenie klucza do rekodowania
 # wersja A
 key_mat_a = getKey(code_mat_a, "MA", c("1","2"), key_a, na_codes = "N")
+
 # wersja B
 key_mat_b = getKey(code_mat_b, "MB", c("1","2"), key_b, na_codes = "N")
 
