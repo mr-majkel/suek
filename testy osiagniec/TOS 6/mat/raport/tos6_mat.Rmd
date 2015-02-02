@@ -361,7 +361,7 @@ round(mod3$xsi[grep("^K.*A$|KMA_10:wersjaA:step1|KMA_22:wersjaA:step1",
                     rownames(mod3$xsi)), ], 3)
 ```
 
-Dla większości zadań efekty związane z różnicami funkcjonowania pomiędzy wersjami są niewielkie. Tylko zadanie KMA\_24 i oszacowanie dla progów dla zadania KMA\_22 wykazują róźnicę w trudności pomiędzy wersjami większą od 0,2 logita (odpowiednio, na korzyść wersji A i wersji B). Zadanie te są jednak dosyć trudne i duża różnica w logitach nie przekłada się na duż różnicę prawdopodobieństwa odpowiedzi. Przyjrzyjmy się zatem tym ostatnim dla zadań kotwiczących.
+Dla większości zadań efekty związane z różnicami funkcjonowania pomiędzy wersjami są niewielkie. Tylko zadanie KMA\_24 i oszacowanie dla progów dla zadania KMA\_22 wykazują róźnicę w trudności pomiędzy wersjami większą od 0,2 logita (odpowiednio, na korzyść wersji A i wersji B). Zadanie te są jednak dosyć trudne i duża różnica w logitach nie przekłada się na duż różnicę prawdopodobieństwa odpowiedzi.
 
 ```{r, echo = FALSE, results = "hide", warning = FALSE}
 
@@ -381,7 +381,7 @@ print_ctt = function(ctt_df, item, group = 1) {
 ```
 
 ```{r, echo = FALSE, warning = FALSE}
-for (ik in items_kotw) {
+for (ik in c("KMA_22", "KMA_24")) {
     cat(paste0("\nZad. ", ik, "\n"))
     print(round_df(print_ctt(ctt3, ik, "A"), 3))
     print(round_df(print_ctt(ctt3, ik, "B"), 3))
@@ -389,7 +389,7 @@ for (ik in items_kotw) {
 
 ```
 
-Różnice w odsetkach uczniów uzyskujących poszczegolne kategorie pomiędzy wersjami testu są minimalne (wahają się w granicach 2-3 pkt. proc.). W związku z tym, można uznać, że wszystkie zadania kotwiczące dobrze spełniaja swoją funkcję.
+Różnice w odsetkach uczniów uzyskujących poszczególne kategorie pomiędzy wersjami testu są minimalne (wahają się w granicach 2-3 pkt. proc.). W związku z tym, można uznać, że zadania kotwiczące dobrze spełniaja swoją funkcję.
 
 ##  Analiza zróżnicowanego funkcjonowania zadania (DIF) ze względu na płeć
 
@@ -464,8 +464,156 @@ Po analizie treściowej zadań, tylko zadanie MA\_7 ("Żaglówka znajduje się w
 
 Na potrzeby wyliczania wyników uczniów, parametr trudności dla zadania MA\_7 będzie oszacowywany oddzielnie dla płci. W efekcie zadanie to będzie łatwiejsze dla chłopców niż dla dziewczynek.
 
-```{r}
+```{r, echo = FALSE}
+# zmodyfikowanie baz
 
+# baza nierekodowana
+mat_all2 = mat_all
+mat_all2$MA_7k = mat_all$MA_7
+mat_all2$MA_7m = mat_all$MA_7
+
+mat_all2[mat_all2$plec == "M", "MA_7k"] = NA
+mat_all2[mat_all2$plec == "K", "MA_7m"] = NA
+
+# baza rekodowana
+mat_all_r2 = mat_all_r
+mat_all_r2$MA_7k = mat_all_r$MA_7
+mat_all_r2$MA_7m = mat_all_r$MA_7
+
+mat_all_r2[mat_all_r2$plec == "M", "MA_7k"] = NA
+mat_all_r2[mat_all_r2$plec == "K", "MA_7m"] = NA
+
+
+```
+
+# Model ostateczny, wyliczenie wyników uczniów
+
+W modelu tym nie wuzględnia się zadania MB\_25, a trudność zadania MA\_7 jest wyliczana oddzielnie dla chłopców i dziewczynek.
+
+```{r, echo = FALSE, results = "hide", cache = TRUE}
+############ model 5
+# zadania do uwzględnienia w ostatecznym modelu
+items3a = items2[-grep("MA_7", items2)]
+items3 = c(items3a, "MA_7k", "MA_7m")
+
+mod5 = tam.mml(mat_all_r2[, items3],
+               formulaY = ~ kobieta,
+               dataY = mat_all_r2[, "kobieta", drop = FALSE],
+               control = list(QMC = FALSE))
+
+setwd(wd)
+summary(mod5, "modele/mod5")
+```
+
+```{r, echo = FALSE}
+setwd(wd)
+sumPart("modele/mod5__SUMMARY.Rout", c(2:4))
+```
+
+Wyliczanie wyników oodbywalo sie w kilku krokach.
+
+1. Wyekstrahowanie parametrów zadań z modelu ostatecznego.
+
+```{r, echo = FALSE} 
+### Krok pierwszy: wyekstrahowanie macierzy z oszacowaniami z mod_ost
+xsi_fixed = cbind(1:length(mod5$xsi$xsi),
+                  mod5$xsi$xsi)
+```
+
+2. Przekodowanie zadań nieosiągniętych (*not reached*) na odpowiedzi błędne.
+
+```{r, echo = FALSE, results = "hide"}
+### Krok drugi: przygotowanie baz bez NA pod koniec zeszytów
+
+# sprawdzenie, czy w case'y są tak samo poukladane w bazie (powinny być,
+# ale...;) )
+any(mat_all2$ID_ucz != mat_all_r2$ID_ucz)
+# powinno być FALSE
+
+# głównym problemem jest istnienie NA pod koniec zeszytów w bazie mat_all_r
+# podmieńmy je na zera
+# prosta funkcja do rekodowania "zwrotnego"
+# funkcja niepodmienia eNek w zadaniach, które nie występują w bazie
+# nierekodowanej (zostawia je jak są), dlatego warto rozpłciowić zadania w bazie
+# nierekodowanej w taki sam sposób, jak w rekodowanej.
+
+recode_back = function(df_r, df, item = "^[KC]", code = "N") {
+  zad_df_r = df_r[, grep(item, names(df_r))]
+  zad_df = df[, grep(item, names(df))]
+  
+  zad_df_r2 = as.data.frame(lapply(names(zad_df_r), function(nm) {
+    if(nm %in% names(zad_df)) {
+      zad_df_r[which(zad_df[, nm] == code), nm] = 0      
+    }
+    zad_df_r[, nm]
+    
+  }), stringsAsFactors = FALSE)
+  
+  df_r[, grep(item, names(df_r))] = zad_df_r2
+  df_r
+}
+
+mat_all_r3 = recode_back(mat_all_r2, mat_all2, item = "^[KM]")
+```
+
+3. Policzenie średnich klasowych na podstawie oszacowań EAP z modelu z regresją latentną na płeć i z parametrami zadań z modelu ostatecznego.
+
+```{r, echo = FALSE, results = 'hide'}
+### Krok trzeci: policzenie średnich klasowych
+mod_mean = tam.mml(mat_all_r3[, items3], xsi.fixed = xsi_fixed,
+               formulaY = ~ kobieta,
+               dataY = mat_all_r3[, "kobieta", drop = FALSE])
+
+# dołączenie oszacowań do uczniów z informacją o klasie i szkole
+osz_ucz = data.frame(mat_all_r3[, grep("ID_ucz|ID_szk|oddz_6|kobieta",
+                                        names(mat_all_r3))],
+                     wyn = mod_mean$person$EAP) 
+# policzenie średniej dla klas
+osz_kl_mn = plyr::ddply(osz_ucz, c("ID_szk", "oddz_6"),
+                         summarize, srednia_kl = mean(wyn))
+# dodanie średniej do zbioru danych
+osz_ucz2 = merge(osz_ucz, osz_kl_mn, all.x = TRUE)
+```
+
+4. Policzenie wyników (EAP oraz 5 PV) w modelu z regresją latentną na płeć i średnią klasową oraz z parametrami zadań z modelu ostatecznego.
+
+```{r, echo = FALSE, results = "hide"}
+### Krok czwarty: policzenie wyników z uwzględnieniem średniej klasowej
+mod_ost_mn = tam.mml(mat_all_r3[, items3], xsi.fixed = xsi_fixed,
+                 formulaY = ~ kobieta + srednia_kl,
+                 dataY = osz_ucz2[match(osz_ucz2$ID_ucz, mat_all_r3$ID_ucz), ],
+                 pid = mat_all_r3$ID_ucz)
+
+# policzenie 5 PV
+pv_ucz = tam.pv(mod_ost_mn, 5)$pv
+
+# dołączenie PV do wyników EAP i bł.st.
+wyn_ucz = merge(mod_ost_mn$person, pv_ucz, all.x = TRUE)
+wyn_ucz = wyn_ucz[, -grep("case|pweight", names(wyn_ucz))]
+
+# zmiana nazw zmiennych: EAPy
+zmod_EAP = paste0(names(wyn_ucz)[grep("EAP", names(wyn_ucz))], "_m")
+names(wyn_ucz)[grep("EAP", names(wyn_ucz))] = zmod_EAP
+
+# zmiana nazw zmiennych: PV
+zmod_PV = gsub(".Dim1", "_m", names(wyn_ucz)[grep("PV", names(wyn_ucz))])
+names(wyn_ucz)[grep("PV", names(wyn_ucz))] = zmod_PV
+
+# zapisanie zbioru
+# write.csv2(wyn_ucz, "bazy zmien/TOS6_wyniki_mat.csv", row.names = FALSE)
+```
+
+Histogram wyników (EAP).
+
+```{r, echo = FALSE}
+hist(wyn_ucz$EAP_m, breaks = 30, freq = FALSE, xlab = "EAP", main = "")
+```
+
+Wykres rozrzutu dla błędu oszacowania w zależności od EAP.
+
+```{r, echo = FALSE}
+plot(wyn_ucz$EAP_m, wyn_ucz$SD.EAP_m, xlab = "EAP", ylab = "SD",
+     ylim = c(0.3, 0.7), xlim = c(-3, 3), col = rgb(0, 0, 0, 0.3))
 ```
 
 
@@ -473,5 +621,150 @@ Na potrzeby wyliczania wyników uczniów, parametr trudności dla zadania MA\_7 
 
 1. Usunąć zad. MB\_25 (nietrafne).
 2. Trudność zadania MA\_7 wyliczana oddzielnie dla chłopców i dziewczynek.
+
+# Załącznik 1. Parametry modelu ostatecznego
+
+```{r, echo = FALSE}
+# wyliczenie miar dopasowania
+fit5 = tam.fit(mod5, progress = FALSE)$itemfit
+
+# scalenie zbiorów danych
+mod5$xsi$parameter = rownames(mod5$xsi)
+mod5_fit = merge(mod5$xsi, fit5)
+
+round_df(mod5_fit[, c(1:6, 8:10)], 4)
+```
+
+# Załącznik 2. Skrypt do wyliczenia ostatecznego modelu
+
+```{r, eval = FALSE}
+# wczytaj dane
+load("bazy zmien/bazy_mat.RData")
+
+# dodanie do bazy zadania rozpłciowionego MA_7
+# baza nierekodowana
+mat_all2 = mat_all
+mat_all2$MA_7k = mat_all$MA_7
+mat_all2$MA_7m = mat_all$MA_7
+
+mat_all2[mat_all2$plec == "M", "MA_7k"] = NA
+mat_all2[mat_all2$plec == "K", "MA_7m"] = NA
+
+# baza rekodowana
+mat_all_r2 = mat_all_r
+mat_all_r2$MA_7k = mat_all_r$MA_7
+mat_all_r2$MA_7m = mat_all_r$MA_7
+
+mat_all_r2[mat_all_r2$plec == "M", "MA_7k"] = NA
+mat_all_r2[mat_all_r2$plec == "K", "MA_7m"] = NA
+
+# zadania do skalowania
+items3 =  c("MA_1", "MA_2", "MA_3", "MA_5", "MA_11", "MA_17", "MA_19", "MA_20",
+            "MA_21", "MA_25", "MB_1", "MB_2", "MB_3", "MB_5", "MB_10", "MB_11",
+            "MB_15", "MB_19", "MB_20", "MB_21", "KMA_4", "KMA_6", "KMA_8",
+            "KMA_9", "KMA_10", "KMA_12", "KMA_13", "KMA_14", "KMA_15", "KMA_16",
+            "KMA_18", "KMA_22", "KMA_23", "KMA_24", "MA_7k", "MA_7m")
+
+# policzenie modelu
+mod5 = tam.mml(mat_all_r2[, items3],
+               formulaY = ~ kobieta,
+               dataY = mat_all_r2[, "kobieta", drop = FALSE],
+               control = list(QMC = FALSE))
+
+# wyliczenie miar dopasowania
+fit5 = tam.fit(mod5, progress = FALSE)$itemfit
+
+# scalenie zbiorów danych
+mod5$xsi$parameter = rownames(mod5$xsi)
+mod5_fit = merge(mod5$xsi, fit5)
+
+# parametry i miary dopasowania
+round_df(mod5_fit[, c(1:6, 8:10)], 4)
+
+```
+
+# Załącznik 3. Skrypt do wyliczenia wyników uczniów.
+
+```{r, eval = FALSE}
+# Zakłada się, że najpierw wyliczono model ostateczny znajdujący się w
+# Załączniku 2.
+
+### Krok pierwszy: wyekstrahowanie macierzy z oszacowaniami z mod5
+xsi_fixed = cbind(1:length(mod5$xsi$xsi),
+                  mod5$xsi$xsi)
+
+### Krok drugi: przygotowanie baz bez NA pod koniec zeszytów
+
+# sprawdzenie, czy w case'y są tak samo poukladane w bazie (powinny być,
+# ale...;) )
+any(mat_all2$ID_ucz != mat_all_r2$ID_ucz)
+# powinno być FALSE
+
+# głównym problemem jest istnienie NA pod koniec zeszytów w bazie mat_all_r
+# podmieńmy je na zera
+# prosta funkcja do rekodowania "zwrotnego"
+# funkcja niepodmienia eNek w zadaniach, które nie występują w bazie
+# nierekodowanej (zostawia je jak są), dlatego warto rozpłciowić zadania w bazie
+# nierekodowanej w taki sam sposób, jak w rekodowanej.
+
+recode_back = function(df_r, df, item = "^[KC]", code = "N") {
+  zad_df_r = df_r[, grep(item, names(df_r))]
+  zad_df = df[, grep(item, names(df))]
+  
+  zad_df_r2 = as.data.frame(lapply(names(zad_df_r), function(nm) {
+    if(nm %in% names(zad_df)) {
+      zad_df_r[which(zad_df[, nm] == code), nm] = 0      
+    }
+    zad_df_r[, nm]
+    
+  }), stringsAsFactors = FALSE)
+  
+  df_r[, grep(item, names(df_r))] = zad_df_r2
+  df_r
+}
+
+mat_all_r3 = recode_back(mat_all_r2, mat_all2, item = "^[KM]")
+
+### Krok trzeci: policzenie średnich klasowych
+mod_mean = tam.mml(mat_all_r3[, items3], xsi.fixed = xsi_fixed,
+               formulaY = ~ kobieta,
+               dataY = mat_all_r3[, "kobieta", drop = FALSE])
+
+# dołączenie oszacowań do uczniów z informacją o klasie i szkole
+osz_ucz = data.frame(mat_all_r3[, grep("ID_ucz|ID_szk|oddz_6|kobieta",
+                                        names(mat_all_r3))],
+                     wyn = mod_mean$person$EAP) 
+# policzenie średniej dla klas
+osz_kl_mn = plyr::ddply(osz_ucz, c("ID_szk", "oddz_6"),
+                         summarize, srednia_kl = mean(wyn))
+# dodanie średniej do zbioru danych
+osz_ucz2 = merge(osz_ucz, osz_kl_mn, all.x = TRUE)
+
+### Krok czwarty: policzenie wyników z uwzględnieniem średniej klasowej
+mod_ost_mn = tam.mml(mat_all_r3[, items3], xsi.fixed = xsi_fixed,
+                 formulaY = ~ kobieta + srednia_kl,
+                 dataY = osz_ucz2[match(osz_ucz2$ID_ucz, mat_all_r3$ID_ucz), ],
+                 pid = mat_all_r3$ID_ucz)
+
+# policzenie 5 PV
+pv_ucz = tam.pv(mod_ost_mn, 5)$pv
+
+# dołączenie PV do wyników EAP i bł.st.
+wyn_ucz = merge(mod_ost_mn$person, pv_ucz, all.x = TRUE)
+wyn_ucz = wyn_ucz[, -grep("case|pweight", names(wyn_ucz))]
+
+# zmiana nazw zmiennych: EAPy
+zmod_EAP = paste0(names(wyn_ucz)[grep("EAP", names(wyn_ucz))], "_m")
+names(wyn_ucz)[grep("EAP", names(wyn_ucz))] = zmod_EAP
+
+# zmiana nazw zmiennych: PV
+zmod_PV = gsub(".Dim1", "_m", names(wyn_ucz)[grep("PV", names(wyn_ucz))])
+names(wyn_ucz)[grep("PV", names(wyn_ucz))] = zmod_PV
+
+# zapisanie zbioru
+write.csv2(wyn_ucz, "bazy zmien/TOS6_wyniki_mat.csv", row.names = FALSE)
+
+```
+
 
 # Literatura cytowana
