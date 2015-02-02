@@ -155,164 +155,364 @@ suek2 = suek1[, zm_suek]
 # posortowanie uczniów w obrębie klasy po nr z dziennika
 suek2 = suek2[order(suek2$id_cke_kl, suek2$nr_dz6), ]
 spr = spr[order(spr$id_cke_kl, spr$kod_u_s), ]
+
 ```
+
+8. Wydzielenie imienia i nazwiska w bazie suekowej.
+
+```{r}
+suek2[, "imie"] = sapply(strsplit(suek2$imie_nazwisko, " "), "[", 1)
+suek2[, "nazwisko"] = sapply(strsplit(suek2$imie_nazwisko, " "), "[", 2)
+```
+
+9. Oznaczenie potencjalnych bliźniaków jednopłciowych (osób o tym samym nazwisku).
+
+```{r}
+suek3 = ddply(suek2,"id_cke_kl", function(x) {
+  ind1 = duplicated(x$nazwisko)
+  ind2 = duplicated(x$nazwisko, fromLast = TRUE)
+  
+  x[, "rodz"] = 0
+  x[ind1 | ind2, "rodz"] = 1
+  x
+  })
+
+```
+
+10. Uporządkowanie zmiennych w bazie suekowej.
+
+```{r}
+zm_suek2 = c("imie", "nazwisko", "nr_dz6", "plec", "data_ur", "id_cke_kl", "id_ucz", "rodz")
+
+suek4 = suek3[, zm_suek2]
+
+```
+
+11. Nadpisanie dziwnych dat jako NA dla daty urodzenia
+
+```{r}
+sort(unique(suek4$data_ur))
+suek4[grep("201[123]|9999", suek4$data_ur), "data_ur"] = NA
+
+```
+
 
 # Łączenie sprawdzianu i danych suekowych
 
 W związku z tym, że nie dysponujemy żadnym dobrym identyfikatorem uczniów pomiędzy bazami danych, sprawdzianową i suekową, łączenie przeprowadzono w kilku krokach. Jako zmiennych identyfikujących użyto różnych podzbiorów z grupy trzech zmiennych: nru z dziennika w klasie 6, płci oraz daty urodzenia. Proces łączenia polega na przypisaniu uczniom w bazie suekowej odpowiedniego nru z dziennika w bazie cke (numer ten identyfikuje uczniów jednoznacznie w obrębie klasy), zwanego dalej kodem ucznia.
 
+Sprawdzenie poprawności przypisania płci.
+
+```{r}
+# wystepujące imiona w bazie
+sort(unique(suek4$imie))
+
+# funkcja do wybierania imion
+ends_with = function(x, letter, not = FALSE) {
+    if (!not) { 
+      substr(x, nchar(x), nchar(x)) %in% letter
+    } else {
+      !(substr(x, nchar(x), nchar(x)) %in% letter)
+    }
+  }
+# kończące się na "a"
+name_a = ends_with(suek4$imie, "a")
+sort(unique(suek4[name_a, "imie"]))
+
+# czy są jacyś chłopcy?
+any(name_a & (suek4$plec != "K"))
+
+# imiona oraz przypisana płeć dla uczniów z "a" na końcu
+a_ind = name_a & (suek4$plec != "K")
+suek4[a_ind,  c("imie", "plec")]
+
+# poprawienie płci dla Wiktorii
+suek4[a_ind & suek4$imie == "Wiktoria", "plec"] = "K"
+
+# kończące się na "o"
+name_o = ends_with(suek4$imie, "o")
+sort(unique(suek4[name_o, "imie"]))
+
+# czy są jakieś dziewczynki?
+any(name_o & (suek4$plec != "M"))
+
+# kończące się na "e"
+name_e = ends_with(suek4$imie, "e")
+sort(unique(suek4[name_e, "imie"]))
+
+# czy są jacyś chłopcy?
+any(name_e & (suek4$plec != "K"))
+
+# imiona oraz przypisana płeć dla uczniów z "e" na końcu
+e_ind = name_e & (suek4$plec != "K")
+suek4[e_ind,  c("imie", "plec")]
+
+# kończące się na "i"
+name_i = ends_with(suek4$imie, "i")
+sort(unique(suek4[name_i, "imie"]))
+
+# czy są jakieś dziewczynki?
+any(name_i & (suek4$plec != "M"))
+
+# kończące się na "y"
+name_y = ends_with(suek4$imie, "y")
+sort(unique(suek4[name_y, "imie"]))
+
+# czy są jakieś dziewczynki?
+any(name_y & (suek4$plec != "M"))
+
+# niekończące się na "a", "o", "e", "i", "y"
+name_other = ends_with(suek4$imie, c("a", "o", "e", "i", "y"), not = TRUE)
+sort(unique(suek4[name_other, "imie"]))
+
+# czy są jakieś dziewczynki?
+any(name_other & (suek4$plec != "M"))
+
+# imiona oraz przypisana płeć dla uczniów z innymi literami na końcu
+other_ind = name_other & (suek4$plec != "M")
+suek4[other_ind,  c("imie", "plec")]
+
+```
+
 Nr z dziennika oraz płeć są znane dla każdego ucznia w bazie suekowej. Data urodzenia dla prawie wszystkich uczniów (> 96 %).
 
 ```{r}
 # odsetek braków danych na dacie urodzenia
-length(suek1[is.na(suek1$data_ur), "id_ucz"]) / nrow(suek1)
+length(suek4[is.na(suek4$data_ur), "id_ucz"]) / nrow(suek4)
 ```
 
 W związku z tym, że płeć oraz data urodzenia są zmiennymi, których wartości mogą się w ramach oddziału powtarzać, na początek przyłączono kod ucznia tym uczniom, dla których te dwie zmienne w jednoznaczny sposób identyfikowały wiersz w bazie cke.
 
 ```{r}
 # przyłączenie numeru z dziennika z bazy CKE
-upd_suek = Map(join_var, dlply(suek2, "id_cke_kl"), dlply(spr, "id_cke_kl"),
+upd_suek = Map(join_var, dlply(suek4, "id_cke_kl"), dlply(spr, "id_cke_kl"),
                MoreArgs = list(askBy.x = c("nr_dz6", "data_ur", "plec"),
                                askBy.y = c("kod_u_s", "data_ur", "plec"),
                                joinVar = "kod_u_s"))
+upd_suekx = join_var(suek4, spr,
+              askBy.x = c("id_cke_kl", "nr_dz6", "data_ur", "plec"),
+              askBy.y = c("id_cke_kl", "kod_u_s", "data_ur", "plec"),
+              joinVar = "kod_u_s")
 
-# odsetek trafień
-hits1 = sum(sapply(upd_suek, function(x) {
-          length(x$kod_u_s_new[!is.na(x$kod_u_s_new)])
-        }))
-hits1/ nrow(suek)
-```
+# id uczniów trafionych
+all_id = ldply(upd_suek, function(x) {
+    x[complete.cases(x$kod_u_s_new), "id_ucz", drop = FALSE]
+  })$id_ucz
+all_idx = upd_suekx[!is.na(upd_suekx$kod_u_s_new), "id_ucz"]
 
-Tak przeprowadzone łączenie pozwoliło przypisać kod ucznia ponad 87% uczniów. W wyniku działania funkcji w obrębie danej klasy kilku uczniów mogło dostać ten sam kod ucznia. Miało to miejsce w sytuacji, gdy w bazie suekowej wystepowało kilku uczniów o tej samej dacie urodzenia i płci, a w bazie cke występował tylko jeden taki przypadek. Dlatego, w następnym kroku usunięto przypisanie uczniom o tych samej płci i dacie urodzenia w klasie w bazie suekowej.
+any(!(all_id %in% all_idx))
+any(!(all_idx %in% all_id))
 
-```{r}
-# usunięcie wartości dla dubli w bazie suek
-upd_suek_dub = llply(upd_suek, mutate, kod_u_s = kod_u_s_new)
-upd_suek2 = Map(join_var, dlply(suek2, "id_cke_kl"), upd_suek_dub,
+# przyłączenie numeru z dziennika z bazy CKE
+upd_suek_a = Map(join_var, dlply(suek4, "id_cke_kl"), dlply(spr, "id_cke_kl"),
                MoreArgs = list(askBy.x = c("data_ur", "plec"),
-                               joinVar = "kod_u_s",
-                               na_rm.y = TRUE))
-hits2 = sum(sapply(upd_suek2, function(x) {
-          length(x$kod_u_s_new[!is.na(x$kod_u_s_new)])
-        }))
+                               askBy.y = c("data_ur", "plec"),
+                               joinVar = "kod_u_s"))
+upd_suek_ax = join_var(suek4, spr,
+              askBy.x = c("id_cke_kl", "data_ur", "plec"),
+              askBy.y = c("id_cke_kl", "data_ur", "plec"),
+              joinVar = "kod_u_s")
 
-# odsetek bez dubli
-hits2/ nrow(suek)
+# id uczniów trafionych
+sex_age_id = ldply(upd_suek_a, function(x) {
+    x[complete.cases(x$kod_u_s_new), "id_ucz", drop = FALSE]
+  })$id_ucz
+sex_age_idx = upd_suek_ax[!is.na(upd_suek_ax$kod_u_s_new), "id_ucz"]
 
+any(!(sex_age_id %in% sex_age_idx))
+any(!(sex_age_idx %in% sex_age_id))
 
-```
-
-Następnie, z bazy cke usunięto te kody uczniów, które zostały w jednoznaczny sposób wykorzystane.
-
-```{r}
-# usuniecie trafień z bazy cke
-
-# wektory trafień dla oddziałów
-hit_list = lapply(upd_suek, function(x) {
-    x$kod_u_s_new[complete.cases(x$kod_u_s_new)]
-  })
-
-# tworzy listę klas sprawdzianowych
-spr_list = dlply(spr, "id_cke_kl")
-
-# aktualizuje listę klas z bazy cke (usuwa przypisane już kody)
-spr_2 =  lapply(names(spr_list), function(i) {
-    x = spr_list[[i]]
-    y = hit_list[[i]]
-    
-    x[!(x$kod_u_s %in% y), ]
-  })
-
-# nadaje nazwy elementom listy
-names(spr_2) = names(spr_list)
-```
-
-W związku z tym, że dla ok. 13% uczniów nie udało się w jednoznaczny sposób przypisać kodu ucznia po dacie urodzenia i płci, postanowiono przyjrzeć się tym oddziałom, w których odsetek braków danych pozostał bardzo wysoki, podobnie jak liczba niewykorzystanych kodów wg bazy cke.
-
-```{r}
-# liczbności braków danych dla bazy suek (po uzupełnieniu)
-suek_bd = ldply(upd_suek3a, function(x) {
-    n_ucz = nrow(x)
-    bd_n = sum(!complete.cases(x$kod_u_s_new))
-    data.frame(n_ucz = n_ucz, bd_n = bd_n, bd_ratio = bd_n/n_ucz)
-  })
-# liczby nieprzypisanych kodów w klasie w bazie cke
-cke_bd = ldply(spr_2, nrow)
-
-# sprawdzenie zgodności kolejności nazw oddziałów w obu bazach
-any(suek_bd$.id != cke_bd$.id)
-
-# wykres rozrzutu dla nieprzypisanych kodów
-plot(suek_bd$bd_ratio, cke_bd$V1,
-     main = "puste kody vs. nieprzypisane kody",
-     xlab = "odsetek pustych kodów (baza suek)",
-     ylab = "niewykorzystane kody (baza cke)")
-```
-
-Puste kody można interpretować jako braki dat urodzenia w bazie suek lub ich błędne wartości. Klasy z dużą ich liczbą zasługują na bliższe przyjrzenie. Jako kryterium przyjęto brak przypisania kodu ucznia dla więcej niż $1/3$ liczby uczniów w klasie lub, w wartościach bezwględnych, pięciu lub więcej uczniów. Ponizej znajdują się wykresy rozrzutu dla nr. z dziennika i kod ucznia wraz z naniesioną linią identyczności dla tak wyselekcjonowanych oddziałów.
-
-```{r}
-podejrzane = suek_bd[suek_bd$bd_ratio > 0.33 | suek_bd$bd_n > 4, ".id"]
-l_ply(upd_suek3a[podejrzane], function(x){
-    id_cke = unique(x$id_cke_kl)
-    id_szk = unique(substr(x$id_ucz, 1, 3))
-    plot(x$nr_dz6, x$kod_u_s_new,
-         main = paste(c(unique(x$id_cke_kl), id_szk), collapse = "\n"),
-         ylim = c(1, 39),
-         xlim = c(1, 39))
-    lines(0:40, 0:40, lty = 2)
-    
-    cat("\nklasa w bazie suek\n")
-    print(x)
-    cat("\nklasa w bazie cke\n")
-    print(spr_list[[id_cke]])
-  })
-
-```
-
-
-```{r}
-############
-upd_suek3a = Map(join_var, upd_suek, spr_2,
+# przyłączenie numeru z dziennika z bazy CKE
+upd_suek_b = Map(join_var, dlply(suek4, "id_cke_kl"), dlply(spr, "id_cke_kl"),
                MoreArgs = list(askBy.x = c("nr_dz6", "plec"),
                                askBy.y = c("kod_u_s", "plec"),
                                joinVar = "kod_u_s"))
 
-hits3a = sum(sapply(upd_suek3a, function(x) {
-          length(x$kod_u_s_new[!is.na(x$kod_u_s_new)])
-        }))
-
-# odsetek
-hits3a/ nrow(suek)
-
-zlacz = ldply(upd_suek3a)[, -1]
-
-# uporządkowanie bazy ze względu na nr_dz6
-zlacz = zlacz[order(zlacz$id_cke_kl, zlacz$nr_dz6), ]
-
-zlacz[, "imie"] = sapply(strsplit(zlacz$imie_nazwisko, " "), "[", 1)
-zlacz[, "nazwisko"] = sapply(strsplit(zlacz$imie_nazwisko, " "), "[", 2)
-
-# oznaczenie uczniów o tym samym nazwisku w klasie
-zlacz[, "rodz"] = 0
-zlacz_list = dlply(zlacz, "id_cke_kl")
-
-zlacz_list2 = lapply(zlacz_list, function(x) {
-  ind1 = duplicated(x$nazwisko)
-  ind2 = duplicated(x$nazwisko, fromLast = TRUE)
-  
-  x[ind1 | ind2, "rodz"] = 1
-  x
-  })
-zlacz2 = ldply(zlacz_list2)[, -1]
+upd_suek_bx = join_var(suek4, spr,
+              askBy.x = c("id_cke_kl", "nr_dz6", "plec"),
+              askBy.y = c("id_cke_kl", "kod_u_s", "plec"),
+              joinVar = "kod_u_s")
 
 
-bliz_kl = unique(zlacz2[(zlacz2$rodz == 1) & is.na(zlacz2$kod_u_s_new),
-                        "id_cke_kl"] )
+sex_nr_id = ldply(upd_suek_b, function(x) {
+    x[complete.cases(x$kod_u_s_new), "id_ucz", drop = FALSE]
+  })$id_ucz
+sex_nr_idx = upd_suek_bx[!is.na(upd_suek_bx$kod_u_s_new), "id_ucz"]
+
+any(!(sex_nr_id %in% sex_nr_idx))
+any(!(sex_nr_idx %in% sex_nr_id))
 
 
+length(all_id)
+length(sex_age_id)
+length(sex_nr_id)
+
+# czy dwa nie jest podzbiorem jeden?
+any(!(sort(intersect(all_id, sex_nr_id)) %in% sort(all_id)))
+# czy część wspólna 1 i 3 nie jest podzbiorem 2?
+any(!(sort(intersect(sex_nr_id, sex_age_id)) %in% sort(all_id)))
+
+# uczniowie nie unikalni
+wsp_1_2 = sort(intersect(sex_nr_id, sex_age_id))
+id_strange = wsp_1_2[!(wsp_1_2 %in% sort(all_id))]
+id_strange2 = setdiff(wsp_1_2, sort(all_id))
+
+# uczniowie jednoznacznie wskazywani
+id_unique = intersect(sex_age_id, all_id)
+length(id_unique)/nrow(suek4)
+
+suek_uniq = upd_suek_bx[upd_suek_bx$id_ucz %in% id_unique, ]
+suek_uniq$kod_s = sapply(strsplit(suek_uniq$id_cke_kl, "_"), "[", 1)
+suek_uniq$klasa_s = sapply(strsplit(suek_uniq$id_cke_kl, "_"), "[", 2)
+names(suek_uniq)[grep("_new", names(suek_uniq))] = "kod_u_s"
+suek_uniq$klasa_6 = suek_uniq$klasa_s
+suek_uniq$data_ur_suek = suek_uniq$data_ur
+suek_uniq$data_ur_cke = suek_uniq$data_ur
+
+suek_uniq2 = suek_uniq[, c("id_ucz", "klasa_6", "nr_dz6", "plec",
+                           "data_ur_suek", "kod_s", "klasa_s", "kod_u_s",
+                           "data_ur_cke")]
+#write.csv2(suek_uniq2, "data/laczenie_unikalne.csv", row.names = FALSE)
+
+# przyłączenie sprawdzianu
+suek_spr_uniq = merge(suek_uniq2,
+                      spr14[, grep("s_|kod_s|klasa|kod_u", names(spr14))],
+                      all.x = TRUE)
+# write.csv2(suek_spr_uniq, "data/suek_spr_unikalne.csv", row.names = FALSE)
+
+# 
+# # odsetek trafień
+# hits1 = sum(sapply(upd_suek, function(x) {
+#           length(x$kod_u_s_new[!is.na(x$kod_u_s_new)])
+#         }))
+# hits1/ nrow(suek)
+# 
+# # id uczniów trafionych
+# ```
+# 
+# Tak przeprowadzone łączenie pozwoliło przypisać kod ucznia ponad 87% uczniów. W wyniku działania funkcji w obrębie danej klasy kilku uczniów mogło dostać ten sam kod ucznia. Miało to miejsce w sytuacji, gdy w bazie suekowej wystepowało kilku uczniów o tej samej dacie urodzenia i płci, a w bazie cke występował tylko jeden taki przypadek. Dlatego, w następnym kroku usunięto przypisanie uczniom o tych samej płci i dacie urodzenia w klasie w bazie suekowej.
+# 
+# ```{r}
+# # usunięcie wartości dla dubli w bazie suek
+# upd_suek_dub = llply(upd_suek, mutate, kod_u_s = kod_u_s_new)
+# upd_suek2 = Map(join_var, dlply(suek2, "id_cke_kl"), upd_suek_dub,
+#                MoreArgs = list(askBy.x = c("data_ur", "plec"),
+#                                joinVar = "kod_u_s",
+#                                na_rm.y = TRUE))
+# hits2 = sum(sapply(upd_suek2, function(x) {
+#           length(x$kod_u_s_new[!is.na(x$kod_u_s_new)])
+#         }))
+# 
+# # odsetek bez dubli
+# hits2/ nrow(suek)
+# 
+# 
+# ```
+# 
+# Następnie, z bazy cke usunięto te kody uczniów, które zostały w jednoznaczny sposób wykorzystane.
+# 
+# ```{r}
+# # usuniecie trafień z bazy cke
+# 
+# # wektory trafień dla oddziałów
+# hit_list = lapply(upd_suek, function(x) {
+#     x$kod_u_s_new[complete.cases(x$kod_u_s_new)]
+#   })
+# 
+# # tworzy listę klas sprawdzianowych
+# spr_list = dlply(spr, "id_cke_kl")
+# 
+# # aktualizuje listę klas z bazy cke (usuwa przypisane już kody)
+# spr_2 =  lapply(names(spr_list), function(i) {
+#     x = spr_list[[i]]
+#     y = hit_list[[i]]
+#     
+#     x[!(x$kod_u_s %in% y), ]
+#   })
+# 
+# # nadaje nazwy elementom listy
+# names(spr_2) = names(spr_list)
+# ```
+# 
+# W związku z tym, że dla ok. 13% uczniów nie udało się w jednoznaczny sposób przypisać kodu ucznia po dacie urodzenia i płci, postanowiono przyjrzeć się tym oddziałom, w których odsetek braków danych pozostał bardzo wysoki, podobnie jak liczba niewykorzystanych kodów wg bazy cke.
+# 
+# ```{r}
+# # liczbności braków danych dla bazy suek (po uzupełnieniu)
+# suek_bd = ldply(upd_suek3a, function(x) {
+#     n_ucz = nrow(x)
+#     bd_n = sum(!complete.cases(x$kod_u_s_new))
+#     data.frame(n_ucz = n_ucz, bd_n = bd_n, bd_ratio = bd_n/n_ucz)
+#   })
+# # liczby nieprzypisanych kodów w klasie w bazie cke
+# cke_bd = ldply(spr_2, nrow)
+# 
+# # sprawdzenie zgodności kolejności nazw oddziałów w obu bazach
+# any(suek_bd$.id != cke_bd$.id)
+# 
+# # wykres rozrzutu dla nieprzypisanych kodów
+# plot(suek_bd$bd_ratio, cke_bd$V1,
+#      main = "puste kody vs. nieprzypisane kody",
+#      xlab = "odsetek pustych kodów (baza suek)",
+#      ylab = "niewykorzystane kody (baza cke)")
+# ```
+# 
+# Puste kody można interpretować jako braki dat urodzenia w bazie suek lub ich błędne wartości. Klasy z dużą ich liczbą zasługują na bliższe przyjrzenie. Jako kryterium przyjęto brak przypisania kodu ucznia dla więcej niż $1/3$ liczby uczniów w klasie lub, w wartościach bezwględnych, pięciu lub więcej uczniów. Ponizej znajdują się wykresy rozrzutu dla nr. z dziennika i kod ucznia wraz z naniesioną linią identyczności dla tak wyselekcjonowanych oddziałów.
+# 
+# ```{r}
+# podejrzane = suek_bd[suek_bd$bd_ratio > 0.33 | suek_bd$bd_n > 4, ".id"]
+# l_ply(upd_suek3a[podejrzane], function(x){
+#     id_cke = unique(x$id_cke_kl)
+#     id_szk = unique(substr(x$id_ucz, 1, 3))
+#     plot(x$nr_dz6, x$kod_u_s_new,
+#          main = paste(c(unique(x$id_cke_kl), id_szk), collapse = "\n"),
+#          ylim = c(1, 39),
+#          xlim = c(1, 39))
+#     lines(0:40, 0:40, lty = 2)
+#     
+#     cat("\nklasa w bazie suek\n")
+#     print(x)
+#     cat("\nklasa w bazie cke\n")
+#     print(spr_list[[id_cke]])
+#   })
+# 
+# ```
+# 
+# 
+# ```{r}
+# ############
+# upd_suek3a = Map(join_var, upd_suek, spr_2,
+#                MoreArgs = list(askBy.x = c("nr_dz6", "plec"),
+#                                askBy.y = c("kod_u_s", "plec"),
+#                                joinVar = "kod_u_s"))
+# 
+# hits3a = sum(sapply(upd_suek3a, function(x) {
+#           length(x$kod_u_s_new[!is.na(x$kod_u_s_new)])
+#         }))
+# 
+# # odsetek
+# hits3a/ nrow(suek)
+# 
+# zlacz = ldply(upd_suek3a)[, -1]
+# 
+# # uporządkowanie bazy ze względu na nr_dz6
+# zlacz = zlacz[order(zlacz$id_cke_kl, zlacz$nr_dz6), ]
+# 
+# zlacz[, "imie"] = sapply(strsplit(zlacz$imie_nazwisko, " "), "[", 1)
+# zlacz[, "nazwisko"] = sapply(strsplit(zlacz$imie_nazwisko, " "), "[", 2)
+# 
+# # oznaczenie uczniów o tym samym nazwisku w klasie
+# zlacz[, "rodz"] = 0
+# zlacz_list = dlply(zlacz, "id_cke_kl")
+# 
+# 
+# zlacz2 = ldply(zlacz_list2)[, -1]
+# 
+# 
+# bliz_kl = unique(zlacz2[(zlacz2$rodz == 1) & is.na(zlacz2$kod_u_s_new),
+#                         "id_cke_kl"] )
+# 
+# 
+# ```
+# 
 ```
-
-
 
