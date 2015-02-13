@@ -1,8 +1,8 @@
 ---
 title: "Przyłączanie sprawdzianu do SUEKowych uczniów"
 author: "Michał Modzelewski"
-date: "`r Sys.Date()`"
-output: html_document
+date: '`r Sys.Date()`'
+output: pdf_document
 ---
 
 ```{r}
@@ -14,7 +14,7 @@ source("R/join_var.R")
 
 # Wczytanie baz danych
 
-```{r}
+```{r, cache = TRUE}
 
 # sprawdzian
 spr14 = read.csv2("data/sprawdzian_2014.csv", stringsAsFactors = FALSE)
@@ -308,7 +308,7 @@ Sytuacja ta zobrazowana jest na poniższym rysunku.
 
 Następnie wyznaczono wspomniane zbiory.
 
-```{r}
+```{r, cache = TRUE}
 # przyłączenie wg metody 1
 met1 = join_var(suek4, spr,
                 askBy.x = c("id_cke_kl", "nr_dz6", "data_ur", "plec"),
@@ -337,7 +337,11 @@ zb_c = setdiff(id_met2, id_met3)
 zb_d = setdiff(id_met3, c(id_met2, zb_b))
 zb_e = setdiff(intersect(id_met2, id_met3), zb_a)
 zb_f = setdiff(suek4$id_ucz, union(id_met2, id_met3))
+```
 
+W kolejnym kroku sprawdzono zależności logiczne pomiędzy zbiorami.
+
+```{r}
 # sprawdzenie zbiorów
 setequal(id_met1, c(zb_a, zb_b))
 setequal(id_met2, c(zb_a, zb_c, zb_e))
@@ -345,7 +349,11 @@ setequal(id_met3, c(zb_a, zb_b, zb_d, zb_e))
 
 # sprawdzenie kompletności i rozłączności zbiorów
 length(suek4$id_ucz) == length(c(zb_a, zb_b, zb_c, zb_d, zb_e, zb_f))
+```
 
+I dodano zmienną do bazy.
+
+```{r}
 # dodanie zmiennej zbior do bazy suek
 suek4$zbior = NA
 
@@ -355,18 +363,100 @@ suek4[suek4$id_ucz %in% zb_c, "zbior"] = "C"
 suek4[suek4$id_ucz %in% zb_d, "zbior"] = "D"
 suek4[suek4$id_ucz %in% zb_e, "zbior"] = "E"
 suek4[suek4$id_ucz %in% zb_f, "zbior"] = "F"
+```
 
-# rozkład liczebności uczniów na poszczególne zbiory
+Rozkład liczebności uczniów w podziale na poszczególne zbiory.
+
+```{r} 
 table(suek4$zbior, useNA = "always")
+```
 
-# i rozkład procentowy
+I rozkład procentowy.
+
+```{r}
 round(table(suek4$zbior)/nrow(suek4), 4) * 100
 ```
 
-Analiza oddziałów pod względem liczby uczniów wchodzących w skład każdego z podzbiorów pozwoli na 
+W oddziałach, w których uczniowie z grupy "A" stanowią 100 % liczebności uczniów, nr z dziennika obecny w bazie suek jest tożsamy z kodem ucznia. W pozostałych oddziałach klasowych sytuacja jest mniej klarowna.
+
+```{r}
+klasy = ddply(suek4, "id_cke_kl", function(x) {
+    data.frame(A = sum(x$zbior == "A"),
+               B = sum(x$zbior == "B"),
+               C = sum(x$zbior == "C"),
+               D = sum(x$zbior == "D"),
+               E = sum(x$zbior == "E"),
+               F = sum(x$zbior == "F"),
+               n = nrow(x))
+  })
+
+klasy_prob = klasy[klasy$A/klasy$n != 1, ]
+```
+
+```{r, fig.height = 1.75, fig.keep='high', dev.args = list(pointsize = 8)}
+par(mfrow = c(1, 3))
+nines = (nrow(klasy_prob) %/% 3) + ifelse((nrow(klasy_prob) %% 3) > 0, 1, 0)
+for(i in 1:nines) {
+  ind = ((i - 1) * 3) + c(1:3)
+  ind = ind[which(ind <= nrow(klasy_prob))]
+  d_ply(klasy_prob[ind,], "id_cke_kl", function(kl) {
+    mat = as.matrix((kl[, -c(1, 8)]/kl[, 8]))
+    barplot(mat, width = 0.1,  ylim = c(0, 1), main = kl[ ,1],
+            mar = c(2,2,2,2))
+    })
+}
+```
+
+A + B
+
+```{r}
+a_b = klasy[klasy$A != klasy$n &
+              klasy$A + klasy$B == klasy$n, 1]
+
+suek4[suek4$id_cke_kl == a_b[3], -c(1, 2)]
+```
+
+A + D
+
+```{r}
+a_d = klasy[klasy$A != klasy$n &
+              klasy$A + klasy$D == klasy$n, 1]
+
+suek4[suek4$id_cke_kl == a_d[2], -c(1, 2)]
+```
+
+A + C
+
+```{r}
+a_c = klasy[klasy$A != klasy$n &
+              klasy$A + klasy$C == klasy$n, 1]
+
+suek4[suek4$id_cke_kl == a_c[1], -c(1, 2)]
+```
+
+A + F
+
+```{r}
+a_f = klasy[klasy$A != klasy$n &
+              klasy$A + klasy$F == klasy$n, 1]
+
+suek4[suek4$id_cke_kl == a_f[1], -c(1, 2)]
+```
+
+A + E
+
+```{r}
+a_e = klasy[klasy$A != klasy$n &
+              klasy$A + klasy$E == klasy$n, 1]
+
+suek4[suek4$id_cke_kl == a_e[1], ]
+spr[spr$id_cke_kl == a_e[1], ]
+```
+
+W tym jednym przypadku wziąć z bazy sprawdzianowej.
 
 
-# Wnioski dla dalszych pracach na zbiorach
+# Wnioski dla dalszych prac na zbiorach
 
 1. Wyróżnić szkołę w Pilchowie poprzez nadanie nowego id szkoły. Zmiana oznaczenia klasy 6 na "A".
 2. Poprawić płeć uczennicy o id 133.B.1048 (z "M" na "K").
