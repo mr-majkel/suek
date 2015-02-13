@@ -606,7 +606,7 @@ names(wyn_ucz)[grep("PV", names(wyn_ucz))] = zmod_PV
 Histogram wyników (EAP).
 
 ```{r, echo = FALSE}
-hist(wyn_ucz$EAP_m, breaks = 30, freq = FALSE, xlab = "EAP", main = "")
+hist(wyn_ucz$EAP_m, breaks = 30, freq = TRUE, xlab = "EAP", main = "")
 ```
 
 Wykres rozrzutu dla błędu oszacowania w zależności od EAP.
