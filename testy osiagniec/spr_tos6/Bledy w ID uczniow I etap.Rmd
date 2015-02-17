@@ -1,0 +1,61 @@
+---
+title: "Błędy w ID uczniów, etap1"
+author: "Michał Modzelewski"
+date: "17.02.2015"
+output: pdf_document
+lang: polish
+---
+
+Podczas przyłączania sprawdzianu do uczniów SUEKowych wykryto błędy w oznaczeniu ankiet dla dwóch szkół. Poniżej są one opisane.
+
+# Szkoła 131
+
+W szkole 131 (oddziały A i C) wykryto podczas łączenia wyników sprawdzianu bardzo dużo błędów w datach urodzenia spisanych z ankiet rodzicielskich. W trakcie wyjaśniania ustalono, że:
+
+1. Lista uczniów z tej szkoły, którą zespół SUEK posługiwał się na dalszych etapach, zawiera, z punktu widzenia I etapu, błędne przypisanie ID do uczniów.
+2. W protokołach ze szkoły znajduje się prawidłowa lista uczniów w badanych oddziałach wraz z przypisaniem ID (załączona poniżej).
+3. Błąd sprowadzał się do przesunięcia imion i nazwisk uczniów o jeden wiersz w górę względem przypisanego ID, poczynając od ucznia, który figuruje na liście uczniów I etapu pod id 131.A.1015.
+4. Błąd wynikał z usunięcia imienia i nazwiska uczennicy, która zajmowała oryginalnie , tj. w trakcie trwania I etapu, pozycję na liście odpowiadającą id 131.A.1015 i wklejeniu jej jako ostatniego ucznia w klasie C, nadając jej tym samym id 131.C.1075.
+5. Przesunięcie dotyczyło tylko imienia i nazwiska, pozostałe kolumny, zawierające miedzy innymi informacje o wykluczeniu, czy wypełnionych narzędziach nie zostały przesunięte.
+6. W efekcie, dwóch uczniów miało przypisany błędny oddział - wspomniana wyżej uczennica i uczeń, który oryginalnie (tj. w trakcie I etapu badania) zajmował pierwsze miejsce na liście w klasie C.
+7. Dodatkowo, błędne przypisanie wykluczeń po I etapie w tej szkole skutkowało bliżej nieokreślonymi konsekwencjami dla uczestnictwa uczniów w dalszych etapach badania.
+
+## Rekomendacje
+
+W **bazach z narzędziami z I etapu, które wykorzystują id ucznia**, zmodyfikować id uczniów ze szkoły 131 zgodnie z poniższą tabelą.
+
+Kolumna o nazwie *id\_etap\_1* określa id uczniów tak jak figurują oni w bazach z etapu 1. Kolumna *id_laczliwe* zawiera id uczniów, w kształcie w jakim było używane na dalszych etapach. Wartość z kolumny *id\_etap\_1* należy nadpisać wartością z kolumny *id_laczliwe*.
+
+\newpage
+
+```{r, echo = FALSE}
+s131 = xlsx::read.xlsx(file = "data/tablica_ID_s131_17022015.xlsx",
+                       colIndex = 1:2,
+                       sheetIndex = 1,
+                       stringsAsFactors = FALSE)
+s131[order(s131$id_etap_1), ]
+```
+Tablica przejścia pomiędzy id z baz na I etapie i tym używanym na dalszych etapach.
+
+\newpage
+
+# Szkoła 156
+
+W szkole o id 156 wykryto, że uczniowie mają błędnie oznaczone ankiety rodzicielskie. Błąd polega głównie na przypisaniu ankietom rodzicielskim uczniów z klasy A, id uczniów z klasy C jeden do jednego, z dwoma wyjątkami (dwóch uczniów na końcu listy w oddziale A). Błąd ten nie występuje w bazach dla innych narzędzi z tego etapu, ani nie dotyczy listy uczniów.
+
+## Rekomendacje
+
+W **bazie z ankietą rodzicielską dla I etapu**, dla szkoły o id 156, zmodyfikować id uczniów zgodnie z poniższą tabelą.
+
+Kolumna o nazwie *id\_etap\_1\_rodz* określa id uczniów tak jak figurują oni w bazach rodzicielskich z etapu 1. Kolumna *id_laczliwe* zawiera id uczniów, w kształcie w jakim było używane dla innych narzędzi na etapie I i dalszych etapach. Wartość z kolumny *id\_etap\_1_rodz* należy nadpisać wartością z kolumny *id_laczliwe*.
+
+
+```{r, echo = FALSE}
+s156 = xlsx::read.xlsx(file = "data/tablica_ID_s156_17022015.xlsx",
+                       colIndex = 1:2,
+                       sheetIndex = 1,
+                       stringsAsFactors = FALSE)
+s156[order(s156$id_etap_1_rodz), ]
+```
+Tablica przejścia pomiędzy id z bazy rodzicielskiej na I etapie i tym używanym w innych bazach.
+
