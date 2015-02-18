@@ -2,17 +2,28 @@
 title: "Przyłączanie sprawdzianu do SUEKowych uczniów"
 author: "Michał Modzelewski"
 date: '`r Sys.Date()`'
-output: pdf_document
+output:
+  pdf_document:
+    fig_caption: no
+    highlight: tango
+    number_sections: yes
+    toc: yes
+  html_document:
+    highlight: tango
+    theme: cosmo
+    toc: yes
+lang: polish
 ---
+\newpage
+
+# Wczytanie baz danych
 
 ```{r}
-#setwd("~/SUEK/Projects/suek/testy osiagniec/spr_tos6")
+# biblioteki, funkcje i opcje
 library(plyr)
 options(width = 90)
 source("R/join_var.R")
 ```
-
-# Wczytanie baz danych
 
 ```{r, cache = TRUE}
 
@@ -48,6 +59,15 @@ rodz_e3u = read.csv2(paste0("data/SUEK E3 Baza ankiet rodziców",
                     stringsAsFactors = FALSE)[, c(2, 4)]
 names(rodz_e3u) = c("id_ucz", "data_ur")
 
+# tablice przejścia z błędnych id na poprawne
+s131 = xlsx::read.xlsx(file = "data/tablica_ID_s131_17022015.xlsx",
+                       colIndex = 1:2,
+                       sheetIndex = 1,
+                       stringsAsFactors = FALSE)
+s156 = xlsx::read.xlsx(file = "data/tablica_ID_s156_17022015.xlsx",
+                       colIndex = 1:2,
+                       sheetIndex = 1,
+                       stringsAsFactors = FALSE)
 ```
 
 # Obróbka danych
@@ -90,7 +110,7 @@ suek[grep("^034.B", suek$id_ucz), "id_klasa6"] = "A"
 
 ```
 
-5. Stworzenie identyfikatora dla klas w bazach sprawdzianowych i suekowych
+5. Stworzenie identyfikatora dla klas w bazach sprawdzianowych i suekowych.
 
 ```{r}
 suek$id_cke_kl = paste(suek$id_cke_s, suek$id_klasa6, sep = "_")
@@ -98,7 +118,7 @@ spr14$id_cke_kl = paste(spr14$kod_s, spr14$klasa_s, sep = "_")
                           
 ```
 
-6. Poprawienie identyfikatora uczniow z ankiety z etapu II
+6. Poprawienie identyfikatora uczniów z ankiety z etapu II.
 
 ```{r}
 id_list = strsplit(rodz_e2$id_ucz, ".", fixed = TRUE)
@@ -111,7 +131,19 @@ rodz_e2$id_ucz = sapply(id_list, function(x) {
 
 ```
 
-7. Przyłączenie daty urodzenia do bazy suekowej.
+7. Poprawienie identyfikatora uczniów na I etapie w szkołach 131 i 156, w bazach rodzicielskich.
+
+```{r}
+# id obecne w bazie rodz_e1
+s131a = s131[s131$id_etap_1 %in% rodz_e1$id_ucz, ]
+s156a = s156[s156$id_etap_1_rodz %in% rodz_e1$id_ucz, ]
+
+rodz_e1[match(s131a$id_etap_1, rodz_e1$id_ucz), "id_ucz"] = s131a$id_laczliwe
+rodz_e1[match(s156a$id_etap_1_rodz, rodz_e1$id_ucz), "id_ucz"] = s156a$id_laczliwe
+
+```
+
+8. Przyłączenie daty urodzenia do bazy suekowej.
 
 ```{r}
 # przylaczenie daty urodzenia
@@ -141,7 +173,7 @@ suek1[match(id_3u, suek1$id_ucz), "data_ur"] =
 
 ```
 
-8. Wybranie klas suekowych z bazy sprawdzianowej oraz ograniczenie zakresu zbiorów do zmiennych identyfikujących.
+9. Wybranie klas suekowych z bazy sprawdzianowej oraz ograniczenie zakresu zbiorów do zmiennych identyfikujących.
 
 ```{r}
 zm_spr = c("kod_u_s", "plec", "data_ur", "id_cke_kl")
@@ -158,14 +190,22 @@ spr = spr[order(spr$id_cke_kl, spr$kod_u_s), ]
 
 ```
 
-9. Wydzielenie imienia i nazwiska w bazie suekowej.
+10. Wydzielenie imienia i nazwiska w bazie suekowej.
 
 ```{r}
+# więcej niż jedno imienni
+name_len = sapply(strsplit(suek2$imie_nazwisko, " "), length)
+# maksymalnie trzy człony
+max(name_len)
+name_three = which(name_len == 3)
+
 suek2[, "imie"] = sapply(strsplit(suek2$imie_nazwisko, " "), "[", 1)
 suek2[, "nazwisko"] = sapply(strsplit(suek2$imie_nazwisko, " "), "[", 2)
+suek2[name_three, "nazwisko"] =
+  sapply(strsplit(suek2[name_three, "imie_nazwisko"], " "), "[", 3)
 ```
 
-10. Oznaczenie potencjalnych bliźniaków jednopłciowych (osób o tym samym nazwisku).
+11. Oznaczenie osób o tym samym nazwisku.
 
 ```{r}
 suek3 = ddply(suek2,"id_cke_kl", function(x) {
@@ -179,7 +219,7 @@ suek3 = ddply(suek2,"id_cke_kl", function(x) {
 
 ```
 
-11. Uporządkowanie zmiennych w bazie suekowej.
+12. Uporządkowanie zmiennych w bazie suekowej.
 
 ```{r}
 zm_suek2 = c("imie", "nazwisko", "nr_dz6", "plec", "data_ur", "id_cke_kl", "id_ucz", "rodz")
@@ -188,7 +228,7 @@ suek4 = suek3[, zm_suek2]
 
 ```
 
-12. Nadpisanie dziwnych dat jako NA dla daty urodzenia
+13. Nadpisanie dziwnych dat jako NA dla daty urodzenia
 
 ```{r}
 sort(unique(suek4$data_ur))
@@ -196,7 +236,7 @@ suek4[grep("201[123]|9999", suek4$data_ur), "data_ur"] = NA
 
 ```
 
-13. Sprawdzenie poprawności przypisania płci.
+14. Sprawdzenie poprawności przypisania płci.
 
 ```{r}
 # wystepujące imiona w bazie
@@ -280,13 +320,15 @@ W związku z tym, że nie dysponujemy żadnym dobrym identyfikatorem uczniów po
 length(suek4[is.na(suek4$data_ur), "id_ucz"]) / nrow(suek4)
 ```
 
-Wyróżniono nastepujące podzbiory zmiennych do łączenia, stanowiące jednocześnie trzy **metody łączenia**:
+## Metody łączenia
+
+Wyróżniono następujące podzbiory zmiennych do łączenia, stanowiące jednocześnie trzy **metody łączenia**:
 
 1. data urodzenia, płeć i nr z dziennika;
 2. data urodzenia i płeć;
 3. nr z dziennika i płeć.
 
-Dla każdego z podzbioru zmiennych możemy określić uczniów, którzy z ich pomocą zostali jednoznacznie wskazani w bazie cke (dalej zwanymi **uczniami zidentyfikowanymi**). Uczniowie zidentyfikowani za pomocą metody 1 stanowią podzbiór uczniów zidentyfikowanych za pomocą metody 3. Uczniowie zidentyfikowani za pomocą metody 2 i metody 3 stanowią zbiory niezależne, podobnie jak zbiory uczniów zidentyfikowanych za pomoca metody 1 i 2. Istnieje część wspólna dla zbiorów uczniów zidentyfikowanych za pomocą trzech metod.
+Dla każdego z podzbioru zmiennych możemy określić uczniów, którzy z ich pomocą zostali jednoznacznie wskazani w bazie cke (dalej zwanymi **uczniami zidentyfikowanymi**). Uczniowie zidentyfikowani za pomocą metody 1 stanowią podzbiór uczniów zidentyfikowanych za pomocą metody 3. Uczniowie zidentyfikowani za pomocą metody 2 i metody 3 stanowią zbiory niezależne, podobnie jak zbiory uczniów zidentyfikowanych za pomocą metody 1 i 2. Istnieje część wspólna dla zbiorów uczniów zidentyfikowanych za pomocą trzech metod.
 
 Porównanie tych zbiorów (części wspólnych i rozłącznych) pozwala wyróżnić sześć, logicznie niezależnych podzbiorów uczniów w bazie suek:
 
@@ -296,7 +338,7 @@ B. Uczniowie, którzy są jednoznacznie identyfikowani tylko za pomocą metody 1
 
 C. Uczniowie, którzy są jednoznacznie identyfikowani tylko za pomocą metody 2 (jest jeden uczeń w bazie cke z taką data urodzenia i płcią, ale ma inny kod ucznia niż nr z dziennika w bazie suek).
 
-D. Uczniowie, którzy sa jednoznacznie identyfikowani tylko za pomocą metody 3 (jest jeden uczeń w bazie cke z taką płcią i kodem ucznia, ale ma inną datę urodzenia lub jej nie posiada).
+D. Uczniowie, którzy są jednoznacznie identyfikowani tylko za pomocą metody 3 (jest jeden uczeń w bazie cke z taką płcią i kodem ucznia, ale ma inną datę urodzenia lub jej nie posiada).
 
 E. Uczniowie, którym metoda 2 i 3 przypisuje odmienne kody uczniów (część wspólna pomiędzy zbiorem 2 i 3).
 
@@ -305,6 +347,8 @@ F. Uczniowie, którym żadna z metod nie pozwala na jednoznaczne przypisanie kod
 Sytuacja ta zobrazowana jest na poniższym rysunku.
 
 ![zbiory](zbiory.png)
+
+### Wyznaczenie zbiorów uczniów
 
 Następnie wyznaczono wspomniane zbiory.
 
@@ -377,7 +421,25 @@ I rozkład procentowy.
 round(table(suek4$zbior)/nrow(suek4), 4) * 100
 ```
 
-W oddziałach, w których uczniowie z grupy "A" stanowią 100 % liczebności uczniów, nr z dziennika obecny w bazie suek jest tożsamy z kodem ucznia. W pozostałych oddziałach klasowych sytuacja jest mniej klarowna.
+## Przyłączanie kodów uczniów w oddziałach
+
+Ze względu na układ poszczególnych grup uczniów w klasie można wyróżnić kilka ogólnych typów oddziałów.
+
+1. Oddziały, w których wszyscy uczniowie należą do grupy A.
+2. Oddziały, dla których uczniowie z grupy A stanowią *zdecydowaną większość*,a pozostali uczniowie:
+  a. lokują się w jednej grupie.
+  b. lokują się w dwóch grupach.
+  c. pozostali uczniowie lokują się w więcej niż dwóch grupach.
+3. Oddziały, dla których uczniowie z grupy A **nie** stanowią *zdecydowanej większości*, a pozostali uczniowie:
+  a. lokują się w jednej grupie.
+  b. lokują się w dwóch grupach.
+  c. pozostali uczniowie lokują się w więcej niż dwóch grupach.
+
+Na potrzeby przyłączania kodów uczniom, za *zdecydowaną większość* dla grupy A przyjęto próg `r tresh = 0.6; tresh*100`% liczebności uczniów w klasie. Tak określony odsetek jednoznacznych przypisań pozwala przypuszczać, że numeracja z dziennika zawarta w bazie suek jest stabilna, a daty urodzenia wystarczająco poprawnie przypisane uczniom, by wykluczyć błąd przy wprowadzaniu danych z ankiet rodzicielskich.
+
+Postanowiono, że kody zostaną przypisane wszystkim uczniom z grupy A, a także uczniom z innych grup, ale tylko w oddziałach typu 2a, 2b i podzbiorze typu 2c. Spośród oddziałów tego ostatniego typu, pod uwagę będą brane tylko te, w których uczniowie znajdują się w trzech grupach, z czego jedna z nich to grupa F.
+
+Dla wszystkich oddziałów problematycznych (typy 2 i 3), wyrysowano wykresy słupkowe z rozkładem liczebności poszczególnych grup uczniów. Ze względu na objętość, wykresy zostały umieszczone w [Załączniku 1](#zal1).
 
 ```{r}
 klasy = ddply(suek4, "id_cke_kl", function(x) {
@@ -389,74 +451,655 @@ klasy = ddply(suek4, "id_cke_kl", function(x) {
                F = sum(x$zbior == "F"),
                n = nrow(x))
   })
-
-klasy_prob = klasy[klasy$A/klasy$n != 1, ]
 ```
 
-```{r, fig.height = 1.75, fig.keep='high', dev.args = list(pointsize = 8)}
-par(mfrow = c(1, 3))
-nines = (nrow(klasy_prob) %/% 3) + ifelse((nrow(klasy_prob) %% 3) > 0, 1, 0)
-for(i in 1:nines) {
-  ind = ((i - 1) * 3) + c(1:3)
-  ind = ind[which(ind <= nrow(klasy_prob))]
-  d_ply(klasy_prob[ind,], "id_cke_kl", function(kl) {
-    mat = as.matrix((kl[, -c(1, 8)]/kl[, 8]))
-    barplot(mat, width = 0.1,  ylim = c(0, 1), main = kl[ ,1],
-            mar = c(2,2,2,2))
-    })
-}
+```{r}
+tresh = 0.6
 ```
 
-A + B
+## Uczniowie "A"
+
+```{r}
+suek5 = suek4
+ucz_a = match(zb_a, suek5$id_ucz)
+suek5[ucz_a, "kod_u_s_new"] = join_var(suek4,
+                                       spr,
+                                 askBy.x = c("id_cke_kl", "nr_dz6",  "plec"),
+                                 askBy.y = c("id_cke_kl", "kod_u_s", "plec"),
+                                 joinVar = "kod_u_s")[ucz_a, "kod_u_s_new"]
+sum(!is.na(suek5$kod_u_s_new))/nrow(suek5)
+```
+
+## Oddziały 1a
+
+### Oddziały "A + B"
+
+Oddziały, w których są osoby o tej samej dacie urodzenia, ale nr z dziennika rozwiewa wątpliwości. Wykresy zostały umieszczone w [Załączniku 1](#ab).
 
 ```{r}
 a_b = klasy[klasy$A != klasy$n &
+              klasy$A/klasy$n > tresh &
               klasy$A + klasy$B == klasy$n, 1]
-
-suek4[suek4$id_cke_kl == a_b[3], -c(1, 2)]
+a_b
+# przykładowy oddział
+suek4[suek4$id_cke_kl == a_b[1], -c(1, 2)]
+spr[spr$id_cke_kl == a_b[1], ]
 ```
 
-A + D
+Decyzja: Przypisać kody uczniom zgodnie z numerem dziennika (metoda 3).
 
 ```{r}
-a_d = klasy[klasy$A != klasy$n &
-              klasy$A + klasy$D == klasy$n, 1]
-
-suek4[suek4$id_cke_kl == a_d[2], -c(1, 2)]
+kod_ab = join_var(suek4[suek4$id_cke_kl %in% a_b, ],
+                  spr[spr$id_cke_kl %in% a_b, ],
+                  askBy.x = c("id_cke_kl", "nr_dz6",  "plec"),
+                  askBy.y = c("id_cke_kl", "kod_u_s", "plec"),
+                  joinVar = "kod_u_s")
 ```
 
-A + C
+### Oddziały "A + C"
+
+1 oddział z przypisaniem błędnego numeru z dziennika uczniowi 104.A.3023. Wykresy zostały umieszczone w [Załączniku 1](#ac).
 
 ```{r}
 a_c = klasy[klasy$A != klasy$n &
+              klasy$A/klasy$n > tresh &
               klasy$A + klasy$C == klasy$n, 1]
+a_c
 
+# przykładowy oddział
 suek4[suek4$id_cke_kl == a_c[1], -c(1, 2)]
+spr[spr$id_cke_kl == a_c[1], ]
 ```
 
-A + F
+Decyzja: Przypisać uczniowi kod z bazy sprawdzianowej (połączyć według metody 2).
 
 ```{r}
-a_f = klasy[klasy$A != klasy$n &
-              klasy$A + klasy$F == klasy$n, 1]
-
-suek4[suek4$id_cke_kl == a_f[1], -c(1, 2)]
+kod_ac = join_var(suek4[suek4$id_cke_kl %in% a_c, ],
+                  spr[spr$id_cke_kl %in% a_c, ],
+                  askBy.x = c("id_cke_kl", "data_ur",  "plec"),
+                  askBy.y = c("id_cke_kl", "data_ur", "plec"),
+                  joinVar = "kod_u_s")
 ```
 
-A + E
+### Oddziały "A + D"
+
+Oddziały z uczniami, z brakiem daty urodzenia lub z podejrzeniem błędu w dacie urodzenia. Wykresy zostały umieszczone w [Załączniku 1](#ad).
+
+```{r}
+a_d = klasy[klasy$A != klasy$n &
+              klasy$A/klasy$n > tresh &
+              klasy$A + klasy$D == klasy$n, 1]
+
+# przykładowy oddział
+suek4[suek4$id_cke_kl == a_d[1], -c(1, 2)]
+spr[spr$id_cke_kl == a_d[1], ]
+```
+
+Decyzja: Przypisanie kodów uczniów zgodnie z numerem dziennika (metoda 3).
+
+```{r, fig.height = 1.75, fig.keep='high', dev.args = list(pointsize = 8)}
+kod_ad = join_var(suek4[suek4$id_cke_kl %in% a_d, ],
+                  spr[spr$id_cke_kl %in% a_d, ],
+                  askBy.x = c("id_cke_kl", "nr_dz6",  "plec"),
+                  askBy.y = c("id_cke_kl", "kod_u_s", "plec"),
+                  joinVar = "kod_u_s")
+```
+
+### Oddziały "A + E"
+
+1 oddział z odmienną kolejnością uczniów w bazach. Dwie dziewczynki nazywają się tak samo, ale w bazie sprawdzianowej kolejność jest odmienna niż w bazie suekowej (dziewczynki są uporządkowane ze względu na datę urodzenia). Wykresy zostały umieszczone w [Załączniku 1](#ae).
 
 ```{r}
 a_e = klasy[klasy$A != klasy$n &
+              klasy$A/klasy$n > tresh &
               klasy$A + klasy$E == klasy$n, 1]
+a_e
 
-suek4[suek4$id_cke_kl == a_e[1], ]
+# przykładowy oddział
+suek4[suek4$id_cke_kl == a_e[1], -c(1, 2)]
 spr[spr$id_cke_kl == a_e[1], ]
 ```
 
-W tym jednym przypadku wziąć z bazy sprawdzianowej.
+Decyzja: Przypisać uczniom kod z bazy sprawdzianowej (połączyć według metody 2).
 
+```{r}
+kod_ae = join_var(suek4[suek4$id_cke_kl %in% a_e, ],
+                  spr[spr$id_cke_kl %in% a_e, ],
+                  askBy.x = c("id_cke_kl", "data_ur",  "plec"),
+                  askBy.y = c("id_cke_kl", "data_ur", "plec"),
+                  joinVar = "kod_u_s")
+```
+
+## Oddziały 1b
+
+### Oddziały "A + B + C"
+
+1 oddział, z potencjalnymi bliźniakami i przesunięciem na listach. Wykresy zostały umieszczone w [Załączniku 1](#abc).
+
+```{r}
+a_b_c = klasy[(klasy$A/klasy$n > tresh) &
+                (klasy$B > 0) &
+                (klasy$C > 0) &
+                (klasy$A + klasy$B + klasy$C == klasy$n), 1]
+a_b_c 
+
+# przykładowy oddział
+suek4[suek4$id_cke_kl == a_b_c[1], -c(1, 2)]
+spr[spr$id_cke_kl == a_b_c[1], ]
+```
+
+Decyzja: Przypisać uczniom kod z bazy sprawdzianowej (połączyć według metody 2), a następnie połączyć po numerze z dziennika.
+
+```{r}
+kod_abc1 = join_var(suek4[suek4$id_cke_kl %in% a_b_c, ],
+                  spr[spr$id_cke_kl %in% a_b_c, ],
+                  askBy.x = c("id_cke_kl", "data_ur",  "plec"),
+                  askBy.y = c("id_cke_kl", "data_ur", "plec"),
+                  joinVar = "kod_u_s")
+kod_abc = join_var(kod_abc1,
+                  spr[spr$id_cke_kl %in% a_b_c, ],
+                  askBy.x = c("id_cke_kl", "nr_dz6",  "plec"),
+                  askBy.y = c("id_cke_kl", "kod_u_s", "plec"),
+                  joinVar = "kod_u_s")
+```
+
+### Oddziały "A + B + D"
+
+Oddziały, w których jest kilku uczniów o tej samej dacie urodzenia w bazie sprawdzianowej, a także znajdują się uczniowie z błędami w dacie urodzenia lub bez niej. Wykresy zostały umieszczone w [Załączniku 1](#abd).
+
+```{r}
+a_b_d = klasy[(klasy$A/klasy$n > tresh) &
+                (klasy$B > 0) &
+                (klasy$D > 0) &
+                (klasy$A + klasy$B + klasy$D == klasy$n), 1]
+a_b_d
+
+# przykładowy oddział
+suek4[suek4$id_cke_kl == a_b_d[2], -c(1, 2)]
+spr[spr$id_cke_kl == a_b_d[2], ]
+```
+
+Decyzja: Przypisanie kodów uczniów zgodnie z numerem dziennika (metoda 3).
+
+```{r}
+kod_abd = join_var(suek4[suek4$id_cke_kl %in% a_b_d, ],
+                  spr[spr$id_cke_kl %in% a_b_d, ],
+                  askBy.x = c("id_cke_kl", "nr_dz6",  "plec"),
+                  askBy.y = c("id_cke_kl", "kod_u_s", "plec"),
+                  joinVar = "kod_u_s")
+```
+
+### Oddziały "A + B + E"
+
+Nie ma takich oddziałów.
+
+```{r, fig.height = 1.75, fig.keep='high', dev.args = list(pointsize = 8)}
+a_b_e = klasy[(klasy$A/klasy$n > tresh) &
+                (klasy$B > 0) &
+                (klasy$E > 0) &
+                (klasy$A + klasy$B + klasy$E == klasy$n), 1]
+a_b_e
+```
+
+### Oddziały "A + B + F"
+
+Oddziały, w których są uczniowie, którzy nie pisali sprawdzianu, a także tacy, których daty urodzenia występują kilka razy w bazie sprawdzianowej. Wykresy zostały umieszczone w [Załączniku 1](#abf).
+
+```{r}
+a_b_f = klasy[(klasy$A/klasy$n > tresh) &
+                (klasy$B > 0) &
+                (klasy$F > 0) &
+                (klasy$A + klasy$B + klasy$F == klasy$n), 1]
+a_b_f
+
+# przykładowy oddział
+suek4[suek4$id_cke_kl == a_b_f[5], -c(1, 2)]
+spr[spr$id_cke_kl == a_b_f[5], ]
+```
+
+Decyzja: Przypisanie kodów uczniów zgodnie z numerem dziennika (metoda 3).
+
+```{r}
+kod_abf = join_var(suek4[suek4$id_cke_kl %in% a_b_f, ],
+                  spr[spr$id_cke_kl %in% a_b_f, ],
+                  askBy.x = c("id_cke_kl", "nr_dz6",  "plec"),
+                  askBy.y = c("id_cke_kl", "kod_u_s", "plec"),
+                  joinVar = "kod_u_s")
+```
+
+### Oddziały "A + C + D"
+
+Nie ma takich oddziałów.
+
+```{r}
+a_c_d = klasy[(klasy$A/klasy$n > tresh) &
+                (klasy$C > 0) &
+                (klasy$D > 0) &
+                (klasy$A + klasy$C + klasy$D == klasy$n), 1]
+a_c_d
+```
+
+### Oddziały "A + C + E"
+
+Oddziały, w których uczniowie są ułożeni w innej kolejności na listach sprawdzianowych i suekowych. Wykresy zostały umieszczone w [Załączniku 1](#ace).
+
+```{r}
+a_c_e = klasy[(klasy$A/klasy$n > tresh) &
+                (klasy$C > 0) &
+                (klasy$E > 0) &
+                (klasy$A + klasy$C + klasy$E == klasy$n), 1]
+a_c_e
+
+# przykładowy oddział
+suek4[suek4$id_cke_kl == a_c_e[1], -c(1, 2)]
+spr[spr$id_cke_kl == a_c_e[1], ]
+```
+
+Decyzja: Przypisać uczniom kod z bazy sprawdzianowej (połączyć według metody 2).
+
+```{r}
+kod_ace = join_var(suek4[suek4$id_cke_kl %in% a_c_e, ],
+                  spr[spr$id_cke_kl %in% a_c_e, ],
+                  askBy.x = c("id_cke_kl", "data_ur",  "plec"),
+                  askBy.y = c("id_cke_kl", "data_ur", "plec"),
+                  joinVar = "kod_u_s")
+nrow(kod_ace)
+```
+
+### Oddziały "A + C + F"
+
+Nie ma takich oddziałów.
+
+```{r}
+a_c_f = klasy[(klasy$A/klasy$n > tresh) &
+                (klasy$C > 0) &
+                (klasy$F > 0) &
+                (klasy$A + klasy$C + klasy$F == klasy$n), 1]
+a_c_f
+
+```
+
+### Oddziały "A + D + E"
+
+Oddziały, w których część uczniów występuje w różnej kolejności na listach a inna część posiada błędy w datach (lub nie ma podanej daty urodzenia). Wykresy zostały umieszczone w [Załączniku 1](#ade).
+
+```{r}
+a_d_e = klasy[(klasy$A/klasy$n > tresh) &
+                (klasy$D > 0) &
+                (klasy$E > 0) &
+                (klasy$A + klasy$D + klasy$E == klasy$n), 1]
+a_d_e
+
+# przykładowy oddział
+suek4[suek4$id_cke_kl == a_d_e[5], -c(1, 2)]
+spr[spr$id_cke_kl == a_d_e[5], ]
+```
+
+Decyzja: Po indywidualnym przyjrzeniu się każdemu oddziałowi postanowiono, że w oddziałach: "061501-02P0C\_E","121902-03P0D\_A" i "280401-03P01\_A" kody zostaną przypisane najpierw po dacie urodzenia, a następnie po numerze z dziennika. Natomiast w oddziałach "121004-03P06\_B" i "302801-01P0A\_C" kody zostaną przypisane po numerze z dziennika.
+
+```{r}
+ade1 = c("121004-03P06_B", "302801-01P0A_C")
+ade2 = c("061501-02P0C_E", "121902-03P0D_A", "280401-03P01_A")
+
+kod_ade1 = join_var(suek4[suek4$id_cke_kl %in% ade1, ],
+                  spr[spr$id_cke_kl %in% ade1, ],
+                  askBy.x = c("id_cke_kl", "nr_dz6",  "plec"),
+                  askBy.y = c("id_cke_kl", "kod_u_s", "plec"),
+                  joinVar = "kod_u_s")
+
+kod_ade2a = join_var(suek4[suek4$id_cke_kl %in% ade2, ],
+                  spr[spr$id_cke_kl %in% ade2, ],
+                  askBy.x = c("id_cke_kl", "data_ur",  "plec"),
+                  askBy.y = c("id_cke_kl", "data_ur", "plec"),
+                  joinVar = "kod_u_s")
+kod_ade2b = join_var(kod_ade2a,
+                  spr[spr$id_cke_kl %in% ade2, ],
+                  askBy.x = c("id_cke_kl", "nr_dz6",  "plec"),
+                  askBy.y = c("id_cke_kl", "kod_u_s", "plec"),
+                  joinVar = "kod_u_s")
+
+kod_ade = rbind(kod_ade1, kod_ade2b)
+```
+
+### Oddziały "A + D + F"
+
+Oddziały z uczniami, z brakiem daty urodzenia lub z podejrzeniem błędu w dacie urodzenia oraz uczniami, których numery z dziennika i daty urodzenia nie występują w bazie sprawdzianowej. Wykresy zostały umieszczone w [Załączniku 1](#adf).
+
+```{r}
+a_d_f = klasy[(klasy$A/klasy$n > tresh) &
+                (klasy$D > 0) &
+                (klasy$F > 0) &
+                (klasy$A + klasy$D + klasy$F == klasy$n), 1]
+a_d_f
+
+# przykładowy oddział
+suek4[suek4$id_cke_kl == a_d_f[9], -c(1, 2)]
+spr[spr$id_cke_kl == a_d_f[9], ]
+```
+
+Decyzja: Przypisanie kodów uczniów zgodnie z numerem dziennika (metoda 3).
+
+```{r}
+kod_adf = join_var(suek4[suek4$id_cke_kl %in% a_d_f, ],
+                  spr[spr$id_cke_kl %in% a_d_f, ],
+                  askBy.x = c("id_cke_kl", "nr_dz6",  "plec"),
+                  askBy.y = c("id_cke_kl", "kod_u_s", "plec"),
+                  joinVar = "kod_u_s")
+```
+
+### Oddziały "A + E + F"
+
+Nie ma takich oddziałów.
+
+```{r}
+a_e_f = klasy[(klasy$A/klasy$n > tresh) &
+                (klasy$E > 0) &
+                (klasy$F > 0) &
+                (klasy$A + klasy$E + klasy$F == klasy$n), 1]
+a_e_f
+```
+
+## Oddziały 1c
+
+### Oddziały "A + B + C + F"
+
+1 oddział, w którym dwoje uczniów jest zamieniona kolejnością w bazie sprawdzianowej, przy czym jedno z nich nie ma daty urodzenia. Po sprawdzeniu nazwiska okazuje się, że w bazie suekowej jest błąd. Wykresy zostały umieszczone w [Załączniku 1](#abcf).
+
+```{r}
+a_b_c_f = klasy[(klasy$A/klasy$n > tresh) &
+                (klasy$B > 0) &
+                (klasy$C > 0) &
+                (klasy$F > 0) &
+                (klasy$A + klasy$B + klasy$C + klasy$F == klasy$n), 1]
+a_b_c_f
+
+# przykładowy oddział
+suek4[suek4$id_cke_kl == a_b_c_f[1], -c(1, 2)]
+spr[spr$id_cke_kl == a_b_c_f[1], ]
+```
+
+Decyzja: Przypisanie uczniom poprawnych numerów z dziennika na potrzeby łączenia metodą 3.
+
+```{r}
+# zamiana nru z dziennika
+suek4[suek4$id_ucz == "178.B.3016", "nr_dz6"] = 17
+suek4[suek4$id_ucz == "178.B.1051", "nr_dz6"] = 18
+
+kod_abcf = join_var(suek4[suek4$id_cke_kl %in% a_b_c_f, ],
+                  spr[spr$id_cke_kl %in% a_b_c_f, ],
+                  askBy.x = c("id_cke_kl", "nr_dz6",  "plec"),
+                  askBy.y = c("id_cke_kl", "kod_u_s", "plec"),
+                  joinVar = "kod_u_s")
+
+# przywrócenie wartości oryginalnych
+suek4[suek4$id_ucz == "178.B.3016", "nr_dz6"] = 18
+suek4[suek4$id_ucz == "178.B.1051", "nr_dz6"] = 17
+```
+
+### Oddziały "A + B + D + F"
+
+Oddziały z uczniami o powtórzonej dacie urodzenia w bazie sprawdzianowej oraz z uczniami z brakami danych na dacie urodzenia lub z błędną jej wartością. Wykresy zostały umieszczone w [Załączniku 1](#abdf).
+
+```{r}
+a_b_d_f = klasy[(klasy$A/klasy$n > tresh) &
+                (klasy$B > 0) &
+                (klasy$D > 0) &
+                (klasy$F > 0) &
+                (klasy$A + klasy$B + klasy$D + klasy$F == klasy$n), 1]
+a_b_d_f
+
+# przykładowy oddział
+suek4[suek4$id_cke_kl == a_b_d_f[15], -c(1, 2)]
+spr[spr$id_cke_kl == a_b_d_f[15], ]
+```
+
+Decyzja: Przyłączyć po numerze z dziennika (metoda 3).
+
+```{r}
+kod_abdf = join_var(suek4[suek4$id_cke_kl %in% a_b_d_f, ],
+                  spr[spr$id_cke_kl %in% a_b_d_f, ],
+                  askBy.x = c("id_cke_kl", "nr_dz6",  "plec"),
+                  askBy.y = c("id_cke_kl", "kod_u_s", "plec"),
+                  joinVar = "kod_u_s")
+```
+
+### Oddziały "A + B + E + F"
+
+Nie ma takich oddziałów.
+
+```{r}
+a_b_e_f = klasy[(klasy$A/klasy$n > tresh) &
+                (klasy$B > 0) &
+                (klasy$E > 0) &
+                (klasy$F > 0) &
+                (klasy$A + klasy$B + klasy$E + klasy$F == klasy$n), 1]
+a_b_e_f
+```
+
+### Oddziały "A + C + E + F"
+
+Nie ma takich oddziałów.
+
+```{r}
+a_c_e_f = klasy[(klasy$A/klasy$n > tresh) &
+                (klasy$C > 0) &
+                (klasy$E > 0) &
+                (klasy$F > 0) &
+                (klasy$A + klasy$C + klasy$E + klasy$F == klasy$n), 1]
+a_c_e_f
+```
+
+### Oddziały "A + D + E + F"
+
+Nie ma takich oddziałów.
+
+```{r}
+a_d_e_f = klasy[(klasy$A/klasy$n > tresh) &
+                (klasy$D > 0) &
+                (klasy$E > 0) &
+                (klasy$F > 0) &
+                (klasy$A + klasy$D + klasy$E + klasy$F == klasy$n), 1]
+
+a_d_e_f
+```
+
+## Inne typy oddziałów
+
+### C + E
+
+Oddziały, w których podejrzewamy duże przesunięcia numeracji, ale po dacie urodzenia można jednoznacznie przypisać każdego ucznia. Wykresy zostały umieszczone w [Załączniku 1](#ce).
+
+```{r}
+c_e = klasy[(klasy$A/klasy$n <= tresh) &
+              (klasy$C > 0) &
+              (klasy$E > 0) &
+              (klasy$A + klasy$C + klasy$E == klasy$n), 1]
+c_e
+
+# przykładowy oddział
+suek4[suek4$id_cke_kl == c_e[1], -c(1, 2)]
+spr[spr$id_cke_kl == c_e[1], ]
+```
+
+Decyzja: Przypisać uczniom kod z bazy sprawdzianowej (połączyć według metody 2).
+
+```{r}
+kod_ce = join_var(suek4[suek4$id_cke_kl %in% c_e, ],
+                  spr[spr$id_cke_kl %in% c_e, ],
+                  askBy.x = c("id_cke_kl", "data_ur",  "plec"),
+                  askBy.y = c("id_cke_kl", "data_ur", "plec"),
+                  joinVar = "kod_u_s")
+```
+
+## Pozostałe oddziały
+
+Oddziały, w których przyłączono kody tylko uczniom z grupy "A". Wykresy zostały umieszczone w [Załączniku 1](#po).
+
+```{r}
+kody = rbind(kod_ab, kod_abc, kod_abcf, kod_abd, kod_abdf, kod_abf, kod_ac,
+             kod_ace, kod_ad, kod_ade, kod_adf, kod_ae, kod_ce)
+names(kody)[grep("kod_u_", names(kody))] = "kod_u_s"
+
+kl_A = klasy[klasy$A == klasy$n, 1]
+remain = klasy[!(klasy$id_cke_kl %in% c(kl_A, unique(kody$id_cke_kl))), 1]
+
+remain
+
+# przykładowy oddział
+suek4[suek4$id_cke_kl == remain[1], -c(1, 2)]
+spr[spr$id_cke_kl == remain[1], ]
+```
+
+```{r}
+suek6 = join_var(suek5,
+                 kody,
+                 askBy.x = c("id_ucz"),
+                 askBy.y = c("id_ucz"),
+                 joinVar = "kod_u_s")
+
+ods = sum(!is.na(suek6$kod_u_s_new))/nrow(suek6)
+```
+
+W wyniku opisanych działań udało się przyłączyć kody `r round(ods*100, 2)`% uczniom. 
+
+# Przyłączenie sprawdzianu
+
+Na podstawie kolumny *kod\_u\_s\_new* oraz informacji o szkole i oddziale można przyłączyć wyniki sprawdzianu.
+
+```{r}
+# wybranie przyłączonych case'ów
+suek7 = suek6[complete.cases(suek6$kod_u_s_new), ]
+
+# określenie zmiennych przyłączanych
+suek_zm = grep("id_ucz|zbior|plec|id_cke|kod_u|data", names(suek7), value = TRUE)
+spr_zm = grep("id_cke_kl|s_|kod_u_s|data", names(spr14), value = TRUE)
+
+# łączenie zbiorów
+suek_spr = merge(suek7[, suek_zm], spr14[, spr_zm], all.x = TRUE,
+                 by.x = c("id_cke_kl", "kod_u_s_new"),
+                 by.y = c("id_cke_kl", "kod_u_s"))
+
+# poprawienie nazw zmiennych
+names(suek_spr)[grep("kod_|.[xy]$", names(suek_spr))] =
+  c("kod_u_s", "data_ur_suek", "data_ur_cke")
+
+# sortowanie zmiennych
+suek_spr = suek_spr[, c("id_ucz", "id_cke_kl", "kod_u_s", "zbior", "plec",
+                        "data_ur_suek", "data_ur_cke",
+                        grep("s_", names(suek_spr), value = TRUE))]
+# zapisanie zbioru
+# write.csv2(suek_spr, "data/sprawdzian_suek_18022015.csv")
+```
 
 # Wnioski dla dalszych prac na zbiorach
 
 1. Wyróżnić szkołę w Pilchowie poprzez nadanie nowego id szkoły. Zmiana oznaczenia klasy 6 na "A".
 2. Poprawić płeć uczennicy o id 133.B.1048 (z "M" na "K").
+3. Poprawić ID w szkole 131 i 156 w bazach z I etapu (zaraportowane 17.02.2015).
+
+# Załącznik 1. Wykresy słupkowe dla oddziałów. {#zal1}
+
+```{r}
+# funkcja do wyrysowania wykresów
+barplot_klas = function(klasy_df, plots_row = 3) {
+  mfrow_old = par("mfrow")
+  par(mfrow = c(1, 3))
+  wiersze = (nrow(klasy_df) %/% plots_row) +
+    ifelse((nrow(klasy_df) %% plots_row) > 0, 1, 0)
+  for(i in 1:wiersze) {
+    ind = ((i - 1) * plots_row) + c(1:plots_row)
+    ind = ind[which(ind <= nrow(klasy_df))]
+    plyr::d_ply(klasy_df[ind,], "id_cke_kl", function(kl) {
+      mat = as.matrix((kl[, -c(1, 8)]/kl[, 8]))
+      barplot(mat, width = 0.1,  ylim = c(0, 1), main = kl[ ,1],
+              mar = c(2,2,2,2))
+      })
+    }
+  par(mfrow = mfrow_old)
+}
+```
+
+## A + B {#ab}
+
+```{r, fig.height = 1.75, fig.keep='high', dev.args = list(pointsize = 8)}
+barplot_klas(klasy[klasy$id_cke_kl %in% a_b, ])
+```
+
+## A + C {#ac}
+
+```{r, fig.height = 1.75, fig.keep='high', dev.args = list(pointsize = 8)}
+barplot_klas(klasy[klasy$id_cke_kl %in% a_c, ])
+```
+
+## A + D {#ad}
+
+```{r, fig.height = 1.75, fig.keep='high', dev.args = list(pointsize = 8)}
+barplot_klas(klasy[klasy$id_cke_kl %in% a_d, ])
+```
+
+## A + E {#ae}
+
+```{r, fig.height = 1.75, fig.keep='high', dev.args = list(pointsize = 8)}
+barplot_klas(klasy[klasy$id_cke_kl %in% a_e, ])
+```
+
+## A + B + C {#abc}
+
+```{r, fig.height = 1.75, fig.keep='high', dev.args = list(pointsize = 8)}
+barplot_klas(klasy[klasy$id_cke_kl %in% a_b_c, ])
+```
+
+## A + B + D {#abd}
+
+```{r, fig.height = 1.75, fig.keep='high', dev.args = list(pointsize = 8)}
+barplot_klas(klasy[klasy$id_cke_kl %in% a_b_d, ])
+```
+
+## A + B + F {#abf}
+
+```{r, fig.height = 1.75, fig.keep='high', dev.args = list(pointsize = 8)}
+barplot_klas(klasy[klasy$id_cke_kl %in% a_b_f, ])
+```
+
+## A + C + E {#ace}
+
+```{r, fig.height = 1.75, fig.keep='high', dev.args = list(pointsize = 8)}
+barplot_klas(klasy[klasy$id_cke_kl %in% a_c_e, ])
+```
+
+## A + D + E {#ade}
+
+```{r, fig.height = 1.75, fig.keep='high', dev.args = list(pointsize = 8)}
+barplot_klas(klasy[klasy$id_cke_kl %in% a_d_e, ])
+```
+
+## A + D + F {#adf}
+
+```{r, fig.height = 1.75, fig.keep='high', dev.args = list(pointsize = 8)}
+barplot_klas(klasy[klasy$id_cke_kl %in% a_d_f, ])
+```
+
+## A + B + C + F {#abcf}
+
+```{r, fig.height = 1.75, fig.keep='high', dev.args = list(pointsize = 8)}
+barplot_klas(klasy[klasy$id_cke_kl %in% a_b_c_f, ])
+```
+
+## A + B + D + F {#abdf}
+
+```{r, fig.height = 1.75, fig.keep='high', dev.args = list(pointsize = 8)}
+barplot_klas(klasy[klasy$id_cke_kl %in% a_b_d_f, ])
+```
+
+## C + E {#ce}
+
+```{r, fig.height = 1.75, fig.keep='high', dev.args = list(pointsize = 8)}
+barplot_klas(klasy[klasy$id_cke_kl %in% c_e, ])
+```
+
+## Pozostałe oddziały {#po}
+
+```{r, fig.height = 1.75, fig.keep='high', dev.args = list(pointsize = 8)}
+barplot_klas(klasy[klasy$id_cke_kl %in% remain, ])
+```
+
