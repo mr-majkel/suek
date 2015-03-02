@@ -549,7 +549,7 @@ czyt_r = czyt_r[, zmienne_czyt]
 
 ## Określenie zadań do modelowania
 
-- nieuwzględnienie zadania KCA\_1 oraz upłciowione wersje zadania CB\_13 (patrz raport ze skalowania TOS6).
+- nieuwzględnienie zadania KCA\_1 oraz wykorzystanie upłciowionych wersji zadania CB\_13 (patrz raport ze skalowania TOS6).
 
 ```{r}
 it_czyt = grep("C", names(czyt), value = TRUE)
