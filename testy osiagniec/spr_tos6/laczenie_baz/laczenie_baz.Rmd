@@ -107,7 +107,7 @@ mat_b = showNotReached(mat_b, "MB")
 ```{r}
 # zrekdowanie baz surowych
 mat_a_r = recodeData(mat_a, mat_klucz_A)
-mat_b_r = recodeData(mat_b, mat_klucz_A)
+mat_b_r = recodeData(mat_b, mat_klucz_B)
 ```
 
 - Połączenie baz z wersjami testu.
@@ -283,7 +283,7 @@ sj_b = showNotReached(sj_b, "MB")
 ```{r}
 # zrekdowanie baz surowych
 sj_a_r = recodeData(sj_a, sj_klucz_A)
-sj_b_r = recodeData(sj_b, sj_klucz_A)
+sj_b_r = recodeData(sj_b, sj_klucz_B)
 ```
 
 - Połączenie baz z wersjami testu.
@@ -444,7 +444,7 @@ czyt_b = showNotReached(czyt_b, "MB")
 ```{r}
 # zrekdowanie baz surowych
 czyt_a_r = recodeData(czyt_a, czyt_klucz_A)
-czyt_b_r = recodeData(czyt_b, czyt_klucz_A)
+czyt_b_r = recodeData(czyt_b, czyt_klucz_B)
 ```
 
 - Połączenie baz z wersjami testu.
