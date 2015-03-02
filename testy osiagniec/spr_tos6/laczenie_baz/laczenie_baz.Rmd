@@ -1,0 +1,573 @@
+---
+title: "Połączenie TOS6 ze sprawdzianem"
+author: "Michał Modzelewski"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    highlight: tango
+    toc: yes
+lang: polish
+---
+
+# Wprowadzenie
+
+Na potrzeby wspólnego skalowania TOS6 i sprawdzianu  potrzebna jest baza z połączonymi wynikami uczniów. W niniejszym dokumencie opisany został proces łączenia baz. Poniżej opisane jest wczytanie baz ze sprawdzianu oraz z informacjami o uczniach oraz ich obróbka. W dalszych częściach znajduje się opis łączenia baz dla trzech testów.
+
+## Wykorzystane pakiety
+
+```{r}
+# devtools::install_github(repo = "mr-majkel/majkTools")
+library(majkTools)
+```
+
+## Sprawdzian i bazy z informacjami o uczniach
+
+```{r}
+# informacje o uczniach
+uczen = read.csv2("data/uczen_dane.csv",
+                  stringsAsFactors = FALSE)
+
+# sprawdzian
+spr = read.csv2("data/sprawdzian_suek_18022015.csv",
+                stringsAsFactors = FALSE)
+```
+
+- W bazie ze sprawdzianem wprowadzono jednoodziałową szkołę o ID 181.A. (z dawnej 034.B.). W bazie z informacjami o uczniach trzeba taką zmianę wprowadzić.
+
+```{r}
+# wprowadzenie szkoły o id 181.A
+uczen[, "ID_ucz"] = gsub("034.B", "181.A", uczen[, "ID_ucz"])
+```
+
+- poprawienie płci dla uczennicy 133.B.1048 (z "M" na "K"). Zgodnie z raportem z 18.02.2015.
+
+```{r}
+uczen[uczen$ID_ucz == "133.B.1048", "plec"] = "K"
+```
+
+\newpage
+
+# Matematyka
+## Wczytanie baz źródłowych
+
+```{r}
+# matematyka
+mat_a = read.csv2("data/SUEK7_TOS6 Matematyka A Dane.csv",
+                  stringsAsFactors = FALSE)
+mat_b = read.csv2("data/SUEK7_TOS6 Matematyka B Dane.csv",
+                  stringsAsFactors = FALSE)
+# klucze TOS6
+mat_klucz_A = readKey("data/mat_klucz_A.csv")
+mat_klucz_B = readKey("data/mat_klucz_B.csv")
+
+# klucz sprawdzian matematyka
+mat_klucz_spr = readKey("data/spr_mat_klucz.csv")
+```
+
+## Zdefiniowanie zadań kotwiczących
+
+```{r}
+# matematyka
+kotw_mat = matrix(c("MA_4", "MB_4",
+                    "MA_6", "MB_6",
+                    "MA_8", "MB_7",
+                    "MA_9", "MB_8",
+                    "MA_10", "MB_9",
+                    "MA_12", "MB_12",
+                    "MA_13", "MB_13",
+                    "MA_14", "MB_14",
+                    "MA_15", "MB_16",
+                    "MA_16", "MB_17",
+                    "MA_18", "MB_18",
+                    "MA_22", "MB_22",
+                    "MA_23", "MB_23",
+                    "MA_24", "MB_24"), ncol = 2, byrow = TRUE)
+```
+
+## Połączenie baz z wersjami testu
+
+- Wprowadzenie informacji o wersji do zbiorów.
+
+```{r}
+# dodanie zmiennej na określenie wersji
+mat_a$wersja = "A"
+mat_b$wersja = "B"
+```
+
+- Oznaczenie zadań "nie-zdążonych".
+
+```{r}
+# wersja z not reached bazy
+mat_a = showNotReached(mat_a, "MA")
+mat_b = showNotReached(mat_b, "MB")
+```
+
+- Zrekodowanie baz surowych.
+
+```{r}
+# zrekdowanie baz surowych
+mat_a_r = recodeData(mat_a, mat_klucz_A)
+mat_b_r = recodeData(mat_b, mat_klucz_A)
+```
+
+- Połączenie baz z wersjami testu.
+
+```{r}
+# połączenie baz dla dwóch wersji 
+mat_all = merge(mat_a, mat_b, all = TRUE)
+mat_all_r = merge(mat_a_r, mat_b_r, all = TRUE)
+```
+
+## Dodanie zadań kotwiczących
+
+```{r}
+# skopiowanie wartości dla zmiennych kotwiczących
+mat_all = addAnchor(mat_all, kotw_mat)
+mat_all_r = addAnchor(mat_all_r, kotw_mat)
+```
+
+## Przyłączenie informacji o uczniach
+
+```{r}
+mat_all = merge(mat_all, uczen, all.x = TRUE)
+mat_all_r = merge(mat_all_r, uczen, all.x = TRUE)
+```
+
+- dodanie kolumny z informacją o płci zakodowaną 0-1
+
+```{r}
+# Stworzenie zmiennej 0-1 dla płci
+mat_all_r$kobieta = NA
+mat_all_r[mat_all_r$plec == "K", "kobieta"] = 1
+mat_all_r[mat_all_r$plec == "M", "kobieta"] = 0
+
+mat_all$kobieta = NA
+mat_all[mat_all$plec == "K", "kobieta"] = 1
+mat_all[mat_all$plec == "M", "kobieta"] = 0
+```
+
+## Wprowadzenie zmian wynikających ze skalowania TOS6
+
+- "rozpłciowienie" zadania MA\_7.
+
+```{r}
+# baza nierekodowana
+mat_all$MA_7k = mat_all$MA_7
+mat_all$MA_7m = mat_all$MA_7
+
+mat_all[mat_all$plec == "M", "MA_7k"] = NA
+mat_all[mat_all$plec == "K", "MA_7m"] = NA
+
+# baza rekodowana
+mat_all_r = mat_all_r
+mat_all_r$MA_7k = mat_all_r$MA_7
+mat_all_r$MA_7m = mat_all_r$MA_7
+
+mat_all_r[mat_all_r$plec == "M", "MA_7k"] = NA
+mat_all_r[mat_all_r$plec == "K", "MA_7m"] = NA
+```
+
+## Dodanie sprawdzianu
+
+- wybranie zadań matematycznych i innych kolumn do przyłączenia
+
+```{r}
+spr_mat = spr[, c(grep("id_ucz|data", names(spr), value = TRUE),
+                  names(mat_klucz_spr))]
+```
+
+- zrekodowanie zadań matematycznych
+
+```{r}
+spr_mat_r = recodeData(spr_mat, mat_klucz_spr)
+```
+
+- przyłączenie sprawdzianu do bazy TOS6 (tylko uczniowie z wynikami TOS6)
+
+```{r}
+mat = merge(mat_all, spr_mat,
+            by.x = "ID_ucz", by.y = "id_ucz", all.x = TRUE)
+mat_r = merge(mat_all_r, spr_mat_r,
+              by.x = "ID_ucz", by.y = "id_ucz", all.x = TRUE)
+```
+
+## Uporządkowanie zbioru
+
+```{r}
+zmienne_mat = c(grep("ID_ucz|ID_szk|oddz|nr_dz|data", names(mat), value = TRUE),
+                "wersja", "kobieta",
+                grep("M|s_", names(mat), value = TRUE))
+
+mat = mat[, zmienne_mat]
+mat_r = mat_r[, zmienne_mat]
+```
+
+## Określenie zadań do modelowania
+
+- nieuwzględnienie zadania MB\_25 oraz wykorzystanie upłciowionych wersji zadania MA\_7 (patrz raport ze skalowania TOS6).
+
+```{r}
+it_mat = c("MA_1", "MA_2", "MA_3", "MA_5", "MA_11", "MA_17", "MA_19",
+           "MA_20", "MA_21", "MA_25", "MB_1", "MB_2", "MB_3", "MB_5",
+           "MB_10", "MB_11", "MB_15", "MB_19", "MB_20", "MB_21", "KMA_4",
+           "KMA_6", "KMA_8", "KMA_9", "KMA_10", "KMA_12", "KMA_13",
+           "KMA_14", "KMA_15", "KMA_16", "KMA_18", "KMA_22", "KMA_23",
+           "KMA_24", "MA_7k", "MA_7m")
+```
+
+- dodanie zadań sprawdzianowych.
+
+```{r}
+it_mat = c(it_mat, names(mat_klucz_spr))
+```
+
+\newpage
+
+# Świadomość językowa
+
+## Wczytanie baz źródłowych
+
+```{r}
+# świadomość językowa
+sj_a = read.csv2("data/SUEK7_TOS6 Kompetencje językowe A Dane.csv",
+                  stringsAsFactors = FALSE)
+sj_b = read.csv2("data/SUEK7_TOS6 Kompetencje językowe B Dane.csv",
+                  stringsAsFactors = FALSE)
+
+# klucze TOS6
+sj_klucz_A = readKey("data/sj_klucz_A.csv")
+sj_klucz_B = readKey("data/sj_klucz_B.csv")
+
+```
+
+## Zdefiniowanie zadań kotwiczących
+
+```{r}
+# świadomość językowa
+kotw_sj = matrix(c("SA_1", "SB_1",
+                   "SA_4", "SB_4",
+                   "SA_5", "SB_5",
+                   "SA_7", "SB_9",
+                   "SA_9", "SB_11",
+                   "SA_12", "SB_13",
+                   "SA_13", "SB_14",
+                   "SA_14", "SB_16",
+                   "SA_15", "SB_17",
+                   "SA_17", "SB_18",
+                   "SA_18", "SB_19",
+                   "SA_20", "SB_21",
+                   "SA_22", "SB_22",
+                   "SA_23", "SB_24"), ncol = 2, byrow = TRUE)
+```
+
+## Połączenie baz z wersjami testu
+
+- Wprowadzenie informacji o wersji do zbiorów.
+
+```{r}
+# dodanie zmiennej na określenie wersji
+sj_a$wersja = "A"
+sj_b$wersja = "B"
+```
+
+- Oznaczenie zadań "nie-zdążonych".
+
+```{r}
+# wersja z not reached bazy
+sj_a = showNotReached(sj_a, "MA")
+sj_b = showNotReached(sj_b, "MB")
+```
+
+- Zrekodowanie baz surowych.
+
+```{r}
+# zrekdowanie baz surowych
+sj_a_r = recodeData(sj_a, sj_klucz_A)
+sj_b_r = recodeData(sj_b, sj_klucz_A)
+```
+
+- Połączenie baz z wersjami testu.
+
+```{r}
+# połączenie baz dla dwóch wersji 
+sj_all = merge(sj_a, sj_b, all = TRUE)
+sj_all_r = merge(sj_a_r, sj_b_r, all = TRUE)
+```
+
+## Dodanie zadań kotwiczących
+
+```{r}
+# skopiowanie wartości dla zmiennych kotwiczących
+sj_all = addAnchor(sj_all, kotw_sj)
+sj_all_r = addAnchor(sj_all_r, kotw_sj)
+```
+
+## Przyłączenie informacji o uczniach
+
+```{r}
+sj_all = merge(sj_all, uczen, all.x = TRUE)
+sj_all_r = merge(sj_all_r, uczen, all.x = TRUE)
+```
+
+- dodanie kolumny z informacją o płci zakodowaną 0-1
+
+```{r}
+# Stworzenie zmiennej 0-1 dla płci
+sj_all_r$kobieta = NA
+sj_all_r[sj_all_r$plec == "K", "kobieta"] = 1
+sj_all_r[sj_all_r$plec == "M", "kobieta"] = 0
+
+sj_all$kobieta = NA
+sj_all[sj_all$plec == "K", "kobieta"] = 1
+sj_all[sj_all$plec == "M", "kobieta"] = 0
+```
+
+## Wprowadzenie zmian wynikających ze skalowania TOS6
+
+- zrekodowanie zadania KSA\_18
+
+```{r}
+sj_all_r[, "KSA_18"] = car::recode(sj_all_r[, "KSA_18"], "2 = 1")
+```
+
+## Dodanie sprawdzianu
+
+- wybranie zadań z pisania i innych kolumn do przyłączenia
+
+```{r}
+spr_sj = spr[, c(grep("id_ucz|data", names(spr), value = TRUE),
+                  grep("s_25|s_26", names(spr), value = TRUE))]
+```
+
+- zrekodowanie zadań z pisania
+
+```{r}
+# zlaczenie zadań z pisania
+spr_sj$s_25r = spr$s_25_1 + spr$s_25_2
+spr_sj$s_26r = spr$s_26_1 + spr$s_26_2 + spr$s_26_3 + spr$s_26_4 + spr$s_26_5
+```
+
+- przyłączenie sprawdzianu do bazy TOS6 (tylko uczniowie z wynikami TOS6)
+
+```{r}
+sj = merge(sj_all, spr_sj,
+            by.x = "ID_ucz", by.y = "id_ucz", all.x = TRUE)
+sj_r = merge(sj_all_r, spr_sj,
+              by.x = "ID_ucz", by.y = "id_ucz", all.x = TRUE)
+```
+
+## Uporządkowanie zbioru
+
+```{r}
+zmienne_sj = c(grep("ID_ucz|ID_szk|oddz|nr_dz|data", names(sj), value = TRUE),
+                "wersja", "kobieta",
+                grep("S|s_", names(sj), value = TRUE))
+
+sj = sj[, zmienne_sj]
+sj_r = sj_r[, zmienne_sj]
+```
+
+## Określenie zadań do modelowania
+
+- nieuwzględnienie zadania SA\_24 oraz KSA\_18 (patrz raport ze skalowania TOS6).
+
+```{r}
+it_sj = grep("S", names(sj), value = TRUE)
+it_sj = it_sj[!it_sj %in% c(kotw_sj, "SA_24", "KSA_18")]
+```
+
+- dodanie zadań sprawdzianowych.
+
+```{r}
+it_sj = c(it_sj, "s_25r", "s_26r")
+```
+
+\newpage
+
+# Czytanie
+
+## Wczytanie baz źródłowych
+
+```{r}
+# czytanie
+czyt_a = read.csv2("data/SUEK7_TOS6 Test czytania A Dane.csv",
+                  stringsAsFactors = FALSE)
+czyt_b = read.csv2("data/SUEK7_TOS6 Test czytania B Dane.csv",
+                  stringsAsFactors = FALSE)
+
+# klucze TOS6
+czyt_klucz_A = readKey("data/czyt_klucz_A.csv")
+czyt_klucz_B = readKey("data/czyt_klucz_B.csv")
+
+# klucz sprwadzian czytanie
+czyt_klucz_spr = readKey("data/spr_czyt_klucz.csv")
+```
+
+## Zdefiniowanie zadań kotwiczących
+
+```{r}
+# czytanie
+kotw_czyt = matrix(c("CA_1", "CB_7",
+                     "CA_2", "CB_8",
+                     "CA_3", "CB_9",
+                     "CA_4", "CB_10",
+                     "CA_5", "CB_11",
+                     "CA_6", "CB_12",
+                     "CA_7", "CB_1",
+                     "CA_8", "CB_2",
+                     "CA_9", "CB_3",
+                     "CA_10", "CB_4",
+                     "CA_11", "CB_5",
+                     "CA_12", "CB_6"), ncol = 2, byrow = TRUE)
+```
+
+## Połączenie baz z wersjami testu
+
+- Wprowadzenie informacji o wersji do zbiorów.
+
+```{r}
+# dodanie zmiennej na określenie wersji
+czyt_a$wersja = "A"
+czyt_b$wersja = "B"
+```
+
+- Oznaczenie zadań "nie-zdążonych".
+
+```{r}
+# wersja z not reached bazy
+czyt_a = showNotReached(czyt_a, "MA")
+czyt_b = showNotReached(czyt_b, "MB")
+```
+
+- Zrekodowanie baz surowych.
+
+```{r}
+# zrekdowanie baz surowych
+czyt_a_r = recodeData(czyt_a, czyt_klucz_A)
+czyt_b_r = recodeData(czyt_b, czyt_klucz_A)
+```
+
+- Połączenie baz z wersjami testu.
+
+```{r}
+# połączenie baz dla dwóch wersji 
+czyt_all = merge(czyt_a, czyt_b, all = TRUE)
+czyt_all_r = merge(czyt_a_r, czyt_b_r, all = TRUE)
+```
+
+## Dodanie zadań kotwiczących
+
+```{r}
+# skopiowanie wartości dla zmiennych kotwiczących
+czyt_all = addAnchor(czyt_all, kotw_czyt)
+czyt_all_r = addAnchor(czyt_all_r, kotw_czyt)
+```
+
+## Przyłączenie informacji o uczniach
+
+```{r}
+czyt_all = merge(czyt_all, uczen, all.x = TRUE)
+czyt_all_r = merge(czyt_all_r, uczen, all.x = TRUE)
+```
+
+- dodanie kolumny z informacją o płci zakodowaną 0-1
+
+```{r}
+# Stworzenie zmiennej 0-1 dla płci
+czyt_all_r$kobieta = NA
+czyt_all_r[czyt_all_r$plec == "K", "kobieta"] = 1
+czyt_all_r[czyt_all_r$plec == "M", "kobieta"] = 0
+
+czyt_all$kobieta = NA
+czyt_all[czyt_all$plec == "K", "kobieta"] = 1
+czyt_all[czyt_all$plec == "M", "kobieta"] = 0
+```
+
+## Wprowadzenie zmian wynikających ze skalowania TOS6
+
+- zrekodowanie zadania KCA\_12
+
+```{r}
+czyt_all_r[, "KCA_12"] = car::recode(czyt_all_r[, "KCA_12"], "2 = 1")
+```
+
+- rozpłciowienie zadania CB\_13.
+
+```{r}
+# baza nierekodowana
+czyt_all$CB_13k = czyt_all$CB_13
+czyt_all$CB_13m = czyt_all$CB_13
+
+czyt_all[czyt_all$plec == "M", "CB_13k"] = NA
+czyt_all[czyt_all$plec == "K", "CB_13m"] = NA
+
+# baza rekodowana
+czyt_all_r = czyt_all_r
+czyt_all_r$CB_13k = czyt_all_r$CB_13
+czyt_all_r$CB_13m = czyt_all_r$CB_13
+
+czyt_all_r[czyt_all_r$plec == "M", "CB_13k"] = NA
+czyt_all_r[czyt_all_r$plec == "K", "CB_13m"] = NA
+```
+
+## Dodanie sprawdzianu
+
+- wybranie zadań z czytania i innych kolumn do przyłączenia
+
+```{r}
+spr_czyt = spr[, c(grep("id_ucz|data", names(spr), value = TRUE),
+                  names(czyt_klucz_spr))]
+```
+
+- zrekodowanie zadań z czytania
+
+```{r}
+# zrekodowanie zadań z czytania
+spr_czyt_r = recodeData(spr_czyt, czyt_klucz_spr)
+```
+
+- przyłączenie sprawdzianu do bazy TOS6 (tylko uczniowie z wynikami TOS6)
+
+```{r}
+czyt = merge(czyt_all, spr_czyt,
+            by.x = "ID_ucz", by.y = "id_ucz", all.x = TRUE)
+czyt_r = merge(czyt_all_r, spr_czyt_r,
+              by.x = "ID_ucz", by.y = "id_ucz", all.x = TRUE)
+```
+
+## Uporządkowanie zbioru
+
+```{r}
+zmienne_czyt = c(grep("ID_ucz|ID_szk|oddz|nr_dz|data", names(czyt),
+                      value = TRUE),
+                "wersja", "kobieta",
+                grep("C|s_", names(czyt), value = TRUE))
+
+czyt = czyt[, zmienne_czyt]
+czyt_r = czyt_r[, zmienne_czyt]
+```
+
+## Określenie zadań do modelowania
+
+- nieuwzględnienie zadania KCA\_1 oraz upłciowione wersje zadania CB\_13 (patrz raport ze skalowania TOS6).
+
+```{r}
+it_czyt = grep("C", names(czyt), value = TRUE)
+it_czyt = it_czyt[!it_czyt %in% c(kotw_czyt, "KCA_1", "CB_13")]
+```
+
+- dodanie zadań sprawdzianowych.
+
+```{r}
+it_czyt = c(it_czyt, names(czyt_klucz_spr))
+```
+
+# Zapisanie zbiorów danych
+
+```{r, eval = FALSE}
+save(mat, mat_r, it_mat,
+     czyt, czyt_r, it_czyt,
+     sj, sj_r, it_sj, file = "data/tos6.RData")
+```
+
+
