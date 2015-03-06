@@ -1,0 +1,301 @@
+---
+title: "Łączne skalowanie TOS6 i sprawdzianu"
+author: "Michał Modzelewski"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    highlight: tango
+    toc: yes
+lang: polish
+---
+
+# Wprowadzenie
+
+```{r}
+load("data/tos6.RData")
+
+# ustawienie kolorów do wykresów
+kolory = palette()
+kolory[c(5, 7:8)] = c("cyan3", "darkorange", "dimgrey")
+palette(kolory)
+```
+
+## Wykorzystane pakiety i funkcje
+
+```{r, message=FALSE}
+# devtools::install_github(repo = "mr-majkel/majkTools")
+library(majkTools)
+
+# devtools::install_github(repo = "mr-majkel/TAM")
+library(TAM, quietly = TRUE)
+library(ggplot2)
+
+# funkcja do zakrąglania kolumn liczbowych w data.frame
+round_df = function(df, ...) {
+  col_class = sapply(df, class)
+  col_num = names(grep("numeric", col_class, value = TRUE))
+  df[, col_num] = round(df[, col_num], ...)
+  df
+}
+
+# funckja do wypluwania tabelek z ktt
+print_ctt = function(ctt_df, item, group = 1) {
+  ctt_col = grep("item$|group|PV|N|Categ|Freq", names(ctt_df))
+  ctt_df[(ctt_df$item == item) & (ctt_df$group == group), ctt_col]
+}
+
+# funkcja do rysowania boxplotów dla miar dopasowania
+fitplot = function(modfit_df, low_fit = 0.8, high_fit = 1.2, ylim = NULL,
+                   lab_size = 4) {
+  mod_md =  reshape2::melt(modfit_df, "parameter")
+  fit_stat = mod_md[grep("fit$", mod_md$variable), ]
+  
+  boxy = ggplot(fit_stat, aes(x = variable, y = value))
+  
+  if(!is.null(ylim)) {
+    boxy = boxy + ylim(ylim[1], ylim[2])  
+  }
+  
+  high_items = fit_stat[fit_stat$value > high_fit, ]
+  low_items = fit_stat[fit_stat$value < low_fit, ]
+  
+  boxy = boxy + geom_boxplot()
+  
+  if(nrow(high_items) > 0) {
+  boxy = boxy + geom_point(data = high_items) +
+    geom_text(aes(label = parameter), data = high_items, hjust = -0.1,
+              size = lab_size)
+  }
+  if(nrow(low_items) > 0) {
+  boxy = boxy + geom_point(data = low_items) +
+    geom_text(aes(label = parameter), data = low_items, hjust = -0.1,
+              size = lab_size)
+  }
+
+  boxy = boxy + geom_hline(yintercept = c(low_fit, high_fit),
+                           linetype = 2)
+  
+  boxy
+}
+
+```
+
+# Świadomość językowa
+
+## Model rozpoznawczy
+
+W skalowaniu wykorzystano ostateczny model ze skalowania TOS6 oraz dwa zrekdowane zadania ze sprawdzianu. Rekomendacje ze skalowania TOS6 sprowadzały się do usunięcia dwóch zadań: SA\_24 oraz KSA\_18. Dodatkowo w zadaniu KSA\_18 skrócono skalę oceny (kat. 2 została połączona z 1).
+
+Ze sprawdzianu wykorzystano dwa zadania: s\_25 oraz s\_26. W analizie dla tych zadań wykorzystano sumy punktów za wszystkie kryteria oceny.
+
+```{r, cache = TRUE}
+mod0 = tam.mml(sj_r[, it_sj], irtmodel = "PCM",
+               formulaY = ~ kobieta, dataY = sj_r[, "kobieta", drop = FALSE],
+               control = list(increment.factor = 1.01,
+                              progress = FALSE))
+
+```
+
+### Dopasowanie
+
+```{r, results = "hide"}
+# dopasowanie zadań
+fit0 = tam.fit(mod0)$itemfit
+
+# scalenie oszacowań parametrów i dopasowania
+mod0$xsi$parameter = rownames(mod0$xsi)
+mod0_fit = merge(mod0$xsi, fit0)
+```
+
+Poniżej znajdują się oszacowane parametry zadań oraz miary dopasowania.
+
+```{r}
+round_df(mod0_fit[, grep("param|xsi|fit$", names(mod0_fit))], 3)
+```
+
+Poniżej znajduje się wykres z miarami dopasowania dla zadań.
+
+```{r, fig.keep = 'last'}
+fitplot(mod0_fit)
+```
+
+Zadanie SB\_23 znajduje się na dolnej granicy (0,8) dopasowania do modelu mierzonego statystyką *outfit*. Dla tej samej miary dopasowania, górną granicę (1,2) przekraczają wszystkie kategorie dla zadania s\_26. Zadanie SB\_23 wykazywało nieco wyższą niż przewidywana dyksryminację również w trakcie skalowania samego TOS6. Nie stanowi to jednak zbytniego obciążenia wyników pomiaru. 
+
+Zadanie s\_26 wymaga jednak większej uwagi. Poniżej znajduje się wykres z krzywymi charakterystycznymi dla tego zadania. Na wykresie umieszczone zostały także obserwowane odsetki dla wszystkich kategorii odpowiedzi dla 8 równolicznych grup wyników.
+
+```{r, results = 'hide', fig.keep = "last", dev.args = list(pointsize = 8)}
+plot(mod0, grep("s_26r", mod0$item$item), ngroups = 8,
+     type = "items", export = FALSE, package = "graphics")
+```
+
+Najbardziej odstającymi kategoriami punktowymi dla zadania s\_26 są kategorie 1 i 2. Wykazują się one zdecydowanie mniejszą zmiennością niż przewiduje to model. 
+
+## Model z rozpłciowionym zadaniem s\_26
+
+```{r}
+sj_r$s_26rk = sj_r$s_26r
+sj_r$s_26rm = sj_r$s_26r
+
+sj_r[sj_r$kobieta == 1, "s_26rm"] = NA
+sj_r[sj_r$kobieta == 0, "s_26rk"] = NA
+summary(sj_r$s_26r)
+```
+
+```{r}
+it_sj2 = it_sj
+it_sj2[grep("s_26r", it_sj)] = "s_26rm"
+it_sj2 = append(it_sj2, "s_26rk")
+mod2 = tam.mml(sj_r[, it_sj2], irtmodel = "PCM",
+               formulaY = ~ kobieta, dataY = sj_r[, "kobieta", drop = FALSE],
+               control = list(increment.factor = 1.01,
+                              progress = FALSE))
+```
+
+```{r, results = "hide"}
+# dopasowanie zadań
+fit2 = tam.fit(mod2)$itemfit
+
+# scalenie oszacowań parametrów i dopasowania
+mod2$xsi$parameter = rownames(mod2$xsi)
+mod2_fit = merge(mod2$xsi, fit2)
+```
+
+```{r, fig.keep = 'last'}
+fitplot(mod2_fit)
+```
+
+```{r, results = "hide", fig.keep = "last", dev.args = list(pointsize = 8)}
+plot(mod2, grep("s_26rk", mod2$item$item), ngroups = 7,
+     type = "items", export = FALSE, package = "graphics")
+```
+
+## Model ze skrócona skalą oceny opowiadania
+
+Po wielu analizach na potrzeby wyliczania wyników przyjęto następujące rozwiązanie: dla kryteriów ocenianych na dłuższych niż zero-jedynkowych skalach, tj. s\_26\_1 (pisze opowiadanie na zadany temat; maks. 3 pkt.) oraz s\_26\_3 (pisze poprawnie pod względem językowym; maks. 2 pkt.), przyznano po jednym punkcie tylko tym uczniom, którzy zdobyli maksymalną liczbę punktów w danym kryterium.
+
+```{r}
+# rekodowanie na 0-1
+sj_r$s_26_1r = car::recode(sj_r$s_26_1,
+                      "1 = 0; 2 = 0; 3 = 1")
+sj_r$s_26_3r = car::recode(sj_r$s_26_3,
+                      "1 = 0; 2 = 1")
+sj_r$s_26rr = sj_r$s_26_1r + 
+              sj_r$s_26_2 + 
+              sj_r$s_26_3r + 
+              sj_r$s_26_4 +
+              sj_r$s_26_5
+
+```
+
+Następnie policzono parametry zadań dla tak zmodyfikowanego modelu.
+
+```{r}
+it_sj1 = it_sj
+it_sj1[grep("s_26r", it_sj)] = "s_26rr"
+mod1 = tam.mml(sj_r[, it_sj1], irtmodel = "PCM",
+               formulaY = ~ kobieta, dataY = sj_r[, "kobieta", drop = FALSE],
+               control = list(increment.factor = 1.01,
+                              progress = FALSE))
+```
+
+Poniżej znajdują się parametry zadań wraz z miarami dopasowania.
+
+```{r, results = "hide"}
+# dopasowanie zadań
+fit1 = tam.fit(mod1)$itemfit
+
+# scalenie oszacowań parametrów i dopasowania
+mod1$xsi$parameter = rownames(mod1$xsi)
+mod1_fit = merge(mod1$xsi, fit1)
+```
+
+Wykres dla miar dopsowania.
+
+```{r, fig.keep = 'last'}
+fitplot(mod1_fit)
+```
+
+Wykres dla zadania s\_26 (skala skrócona).
+
+```{r, results = "hide", fig.keep = "last", dev.args = list(pointsize = 8)}
+plot(mod1, grep("s_26rr", mod1$item$item), ngroups = 7,
+     type = "items", export = FALSE, package = "graphics")
+```
+
+# Matematyka
+
+## Model rozpoznawczy
+
+```{r, cache = TRUE}
+mat_mod0 = tam.mml(mat_r[, it_mat], irtmodel = "PCM",
+                   formulaY = ~ kobieta,
+                   dataY = mat_r[, "kobieta", drop = FALSE],
+                   control = list(increment.factor = 1.01,
+                                  progress = FALSE))
+```
+
+
+```{r, results = "hide"}
+# dopasowanie zadań
+mat_fit0 = tam.fit(mat_mod0)$itemfit
+
+# scalenie oszacowań parametrów i dopasowania
+mat_mod0$xsi$parameter = rownames(mat_mod0$xsi)
+mat_mod0_fit = merge(mat_mod0$xsi, mat_fit0)
+```
+
+
+```{r}
+round_df(mat_mod0_fit[, grep("param|xsi|fit$", names(mat_mod0_fit))], 3)
+```
+
+Wykres dla miar dopasowania.
+
+```{r, fig.keep = 'last'}
+fitplot(mat_mod0_fit)
+```
+
+
+```{r, results = "hide", dev.args = list(pointsize = 8)}
+plot(mat_mod0, grep("s_22", mat_mod0$item$item), ngroups = 7,
+     type = "items", export = FALSE, package = "graphics")
+```
+
+
+# Czytanie
+
+```{r, cache = TRUE}
+czyt_mod0 = tam.mml(czyt_r[, it_czyt], irtmodel = "PCM",
+                   formulaY = ~ kobieta,
+                   dataY = czyt_r[, "kobieta", drop = FALSE],
+                   control = list(increment.factor = 1.01,
+                                  progress = FALSE))
+```
+
+
+```{r, results = "hide"}
+# dopasowanie zadań
+czyt_fit0 = tam.fit(czyt_mod0)$itemfit
+
+# scalenie oszacowań parametrów i dopasowania
+czyt_mod0$xsi$parameter = rownames(czyt_mod0$xsi)
+czyt_mod0_fit = merge(czyt_mod0$xsi, czyt_fit0)
+```
+
+```{r}
+round_df(czyt_mod0_fit[, grep("param|xsi|fit$", names(czyt_mod0_fit))], 3)
+```
+
+Wykres dla miar dopasowania.
+
+```{r, fig.keep = 'last'}
+fitplot(czyt_mod0_fit)
+```
+
+```{r, results = "hide", fig.keep = "last", dev.args = list(pointsize = 8)}
+plot(czyt_mod0, grep("KCA_5", czyt_mod0$item$item), ngroups = 7,
+     type = "items", export = FALSE, package = "graphics")
+```
+
+
+
