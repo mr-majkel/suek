@@ -369,11 +369,11 @@ sj_r = sj_r[, zmienne_sj]
 
 ## Określenie zadań do modelowania
 
-- nieuwzględnienie zadania SA\_24 oraz KSA\_18 (patrz raport ze skalowania TOS6).
+- nieuwzględnienie zadania SA\_2, SA\_24 (patrz raport ze skalowania TOS6).
 
 ```{r}
 it_sj = grep("S", names(sj), value = TRUE)
-it_sj = it_sj[!it_sj %in% c(kotw_sj, "SA_24", "KSA_18")]
+it_sj = it_sj[!it_sj %in% c(kotw_sj, "SA_2", "KSA_24")]
 ```
 
 - dodanie zadań sprawdzianowych.
@@ -569,5 +569,3 @@ save(mat, mat_r, it_mat,
      czyt, czyt_r, it_czyt,
      sj, sj_r, it_sj, file = "data/tos6.RData")
 ```
-
-
