@@ -78,13 +78,34 @@ fitplot = function(modfit_df, low_fit = 0.8, high_fit = 1.2, ylim = NULL,
   boxy
 }
 
+# prosta funkcja do rekodowania "zwrotnego"
+# funkcja niepodmienia eNek w zadaniach, które nie występują w bazie
+# nierekodowanej (zostawia je jak są), dlatego warto rozpłciowić zadania w bazie
+# nierekodowanej w taki sam sposób, jak w rekodowanej.
+
+recode_back = function(df_r, df, item = "^[KC]", code = "N") {
+  zad_df_r = df_r[, grep(item, names(df_r))]
+  zad_df = df[, grep(item, names(df))]
+  
+  zad_df_r2 = as.data.frame(lapply(names(zad_df_r), function(nm) {
+    if(nm %in% names(zad_df)) {
+      zad_df_r[which(zad_df[, nm] == code), nm] = 0      
+    }
+    zad_df_r[, nm]
+    
+  }), stringsAsFactors = FALSE)
+  
+  df_r[, grep(item, names(df_r))] = zad_df_r2
+  df_r
+}
+
 ```
 
 # Świadomość językowa
 
 ## Model rozpoznawczy
 
-W skalowaniu wykorzystano ostateczny model ze skalowania TOS6 oraz dwa zrekdowane zadania ze sprawdzianu. Rekomendacje ze skalowania TOS6 sprowadzały się do usunięcia dwóch zadań: SA\_24 oraz KSA\_18. Dodatkowo w zadaniu KSA\_18 skrócono skalę oceny (kat. 2 została połączona z 1).
+W skalowaniu wykorzystano ostateczny model ze skalowania TOS6 oraz dwa zrekdowane zadania ze sprawdzianu. Rekomendacje ze skalowania TOS6 sprowadzały się do usunięcia dwóch zadań: SA\_2 oraz SA\_24. Dodatkowo w zadaniu KSA\_18 skrócono skalę oceny (kat. 2 została połączona z 1).
 
 Ze sprawdzianu wykorzystano dwa zadania: s\_25 oraz s\_26. W analizie dla tych zadań wykorzystano sumy punktów za wszystkie kryteria oceny.
 
@@ -130,48 +151,9 @@ plot(mod0, grep("s_26r", mod0$item$item), ngroups = 8,
 
 Najbardziej odstającymi kategoriami punktowymi dla zadania s\_26 są kategorie 1 i 2. Wykazują się one zdecydowanie mniejszą zmiennością niż przewiduje to model. 
 
-## Model z rozpłciowionym zadaniem s\_26
-
-```{r}
-sj_r$s_26rk = sj_r$s_26r
-sj_r$s_26rm = sj_r$s_26r
-
-sj_r[sj_r$kobieta == 1, "s_26rm"] = NA
-sj_r[sj_r$kobieta == 0, "s_26rk"] = NA
-summary(sj_r$s_26r)
-```
-
-```{r}
-it_sj2 = it_sj
-it_sj2[grep("s_26r", it_sj)] = "s_26rm"
-it_sj2 = append(it_sj2, "s_26rk")
-mod2 = tam.mml(sj_r[, it_sj2], irtmodel = "PCM",
-               formulaY = ~ kobieta, dataY = sj_r[, "kobieta", drop = FALSE],
-               control = list(increment.factor = 1.01,
-                              progress = FALSE))
-```
-
-```{r, results = "hide"}
-# dopasowanie zadań
-fit2 = tam.fit(mod2)$itemfit
-
-# scalenie oszacowań parametrów i dopasowania
-mod2$xsi$parameter = rownames(mod2$xsi)
-mod2_fit = merge(mod2$xsi, fit2)
-```
-
-```{r, fig.keep = 'last'}
-fitplot(mod2_fit)
-```
-
-```{r, results = "hide", fig.keep = "last", dev.args = list(pointsize = 8)}
-plot(mod2, grep("s_26rk", mod2$item$item), ngroups = 7,
-     type = "items", export = FALSE, package = "graphics")
-```
-
 ## Model ze skrócona skalą oceny opowiadania
 
-Po wielu analizach na potrzeby wyliczania wyników przyjęto następujące rozwiązanie: dla kryteriów ocenianych na dłuższych niż zero-jedynkowych skalach, tj. s\_26\_1 (pisze opowiadanie na zadany temat; maks. 3 pkt.) oraz s\_26\_3 (pisze poprawnie pod względem językowym; maks. 2 pkt.), przyznano po jednym punkcie tylko tym uczniom, którzy zdobyli maksymalną liczbę punktów w danym kryterium.
+Po wielu analizach na potrzeby wyliczania wyników przyjęto następujące rozwiązanie: dla kryteriów ocenianych na dłuższych niż zero-jedynkowych skalach, tj. s\_26\_1 ("pisze opowiadanie na zadany temat"; maks. 3 pkt.) oraz s\_26\_3 ("pisze poprawnie pod względem językowym"; maks. 2 pkt.), przyznano po jednym punkcie tylko tym uczniom, którzy zdobyli maksymalną liczbę punktów w danym kryterium.
 
 ```{r}
 # rekodowanie na 0-1
@@ -207,9 +189,10 @@ fit1 = tam.fit(mod1)$itemfit
 # scalenie oszacowań parametrów i dopasowania
 mod1$xsi$parameter = rownames(mod1$xsi)
 mod1_fit = merge(mod1$xsi, fit1)
+round_df(mod0_fit[, grep("param|xsi|fit$", names(mod0_fit))], 3)
 ```
 
-Wykres dla miar dopsowania.
+Wykres dla miar dopasowania.
 
 ```{r, fig.keep = 'last'}
 fitplot(mod1_fit)
@@ -220,6 +203,99 @@ Wykres dla zadania s\_26 (skala skrócona).
 ```{r, results = "hide", fig.keep = "last", dev.args = list(pointsize = 8)}
 plot(mod1, grep("s_26rr", mod1$item$item), ngroups = 7,
      type = "items", export = FALSE, package = "graphics")
+```
+
+Choć kategoria 4 wciąż wykazuje lekkie niedopasowanie, to postanowiono pozostawić zadanie s\_26 na tak zmodyfikowanej skali.
+
+## Analiza DIF na płeć
+
+W następnym kroku sprawdzono zadania pod kątem zróżnicowanego funkcjonowania zadań ze względu na płeć.
+
+```{r}
+mod2 = tam.mml.mfr(sj_r[, it_sj1],
+      formulaA = ~ item + item:step + kobieta + kobieta:item + kobieta:item:step,
+      facets = sj_r[, "kobieta", drop = FALSE],
+      control = list(increment.factor = 1.03,
+                     fac.oldxsi = 0.05,
+                     progress = FALSE))
+```
+
+Parametry, które wykazują DIF na płeć (bezwzględna różnica w trudności > 0.4; kobieta0 = chłopiec).
+
+```{r}
+dif_params = grepl(":kobieta", rownames(mod2$xsi)) & mod2$xsi$xsi != 99
+round_df(mod2$xsi[dif_params & abs(mod2$xsi$xsi) > 0.2 , ], 3)
+```
+
+Tylko zadania, które były już analizowane na etapie oddzielnego skalowania TOS6 wykazują symptomy zróżnicowanego funkcjonowania (na prawie identycznym poziomie). W związku z tym, do wyliczenia wyników uczniów wykorzystano model ze zrekodowanym zadaniem s\_26.
+
+## Wyliczenie wyników uczniów
+
+Wyliczanie wyników oodbywalo sie w kilku krokach.
+
+1. Wyekstrahowanie parametrów zadań z modelu ostatecznego.
+
+```{r, echo = FALSE} 
+xsi_fixed_sj = cbind(1:length(mod1$xsi$xsi),
+                     mod1$xsi$xsi)
+```
+
+2. Przekodowanie zadań "nie-zdążonych" (*not reached*) na odpowiedzi błędne.
+
+```{r}
+sj_r2 = recode_back(sj_r, sj, item = "^[KS]")
+sj_r2[sj_r2 == "N"] = 0
+```
+
+3. Policzenie średnich klasowych na podstawie oszacowań EAP z modelu z regresją latentną na płeć i z parametrami zadań z modelu ostatecznego.
+
+```{r}
+mod_mean = tam.mml(sj_r2[, it_sj1], xsi.fixed = xsi_fixed_sj,
+                   formulaY = ~ kobieta, dataY = sj_r2[, "kobieta", drop = FALSE],
+                   control = list(increment.factor = 1.01,
+                                  progress = FALSE))
+
+# dołączenie oszacowań do uczniów z informacją o klasie i szkole
+osz_ucz = data.frame(sj_r2[, grep("ID_ucz|ID_szk|oddz_6|kobieta",
+                                        names(sj_r2))],
+                     wyn = mod_mean$person$EAP) 
+# policzenie średniej dla klas
+osz_kl_mn = plyr::ddply(osz_ucz, c("ID_szk", "oddz_6"),
+                         plyr::summarize, srednia_kl = mean(wyn))
+# dodanie średniej do zbioru danych
+osz_ucz2 = merge(osz_ucz, osz_kl_mn, all.x = TRUE)
+```
+
+4. Policzenie wyników (EAP oraz 5 PV) w modelu z regresją latentną na płeć i średnią klasową oraz z parametrami zadań z modelu ostatecznego.
+
+```{r}
+mod_ost_mn = tam.mml(sj_r2[, it_sj1], xsi.fixed = xsi_fixed_sj,
+                     formulaY = ~ kobieta + srednia_kl,
+                     dataY = osz_ucz2[match(osz_ucz2$ID_ucz, sj_r2$ID_ucz), ],
+                     pid = sj_r2$ID_ucz,
+                     control = list(increment.factor = 1.01,
+                                    progress = FALSE))
+
+# policzenie 5 PV
+pv_ucz = tam.pv(mod_ost_mn, 5)$pv
+
+# dołączenie PV do wyników EAP i bł.st.
+wyn_ucz = merge(mod_ost_mn$person, pv_ucz, all.x = TRUE)
+wyn_ucz = wyn_ucz[, -grep("case|pweight", names(wyn_ucz))]
+
+# zmiana nazw zmiennych: EAPy
+zmod_EAP = paste0(names(wyn_ucz)[grep("EAP", names(wyn_ucz))], "_sj")
+names(wyn_ucz)[grep("EAP", names(wyn_ucz))] = zmod_EAP
+
+# zmiana nazw zmiennych: PV
+zmod_PV = gsub(".Dim1", "_sj", names(wyn_ucz)[grep("PV", names(wyn_ucz))])
+names(wyn_ucz)[grep("PV", names(wyn_ucz))] = zmod_PV
+```
+
+Zapisanie zbioru
+
+```{r, eval = FALSE}
+write.csv2(wyn_ucz, "data/TOS6_Spr_wyniki_sj.csv", row.names = FALSE)
 ```
 
 # Matematyka
