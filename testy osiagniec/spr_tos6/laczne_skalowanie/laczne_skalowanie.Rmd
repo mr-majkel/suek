@@ -235,7 +235,7 @@ Wyliczanie wyników oodbywalo sie w kilku krokach.
 
 1. Wyekstrahowanie parametrów zadań z modelu ostatecznego.
 
-```{r, echo = FALSE} 
+```{r} 
 xsi_fixed_sj = cbind(1:length(mod1$xsi$xsi),
                      mod1$xsi$xsi)
 ```
@@ -292,7 +292,7 @@ zmod_PV = gsub(".Dim1", "_sj", names(wyn_ucz)[grep("PV", names(wyn_ucz))])
 names(wyn_ucz)[grep("PV", names(wyn_ucz))] = zmod_PV
 ```
 
-Zapisanie zbioru
+Zapisanie zbioru.
 
 ```{r, eval = FALSE}
 write.csv2(wyn_ucz, "data/TOS6_Spr_wyniki_sj.csv", row.names = FALSE)
@@ -302,6 +302,8 @@ write.csv2(wyn_ucz, "data/TOS6_Spr_wyniki_sj.csv", row.names = FALSE)
 
 ## Model rozpoznawczy
 
+W skalowaniu wykorzystano ostateczny model ze skalowania TOS6 oraz 13 zrekodowanych zadań ze sprawdzianu. Rekomendacje ze skalowania TOS6 sprowadzały się do usunięcia zadania MB\_25. Dodatkowo dla zadania MA\_7 wyliczany jest oddzielny parametr trudności dla chłopców i dziewcząt.
+
 ```{r, cache = TRUE}
 mat_mod0 = tam.mml(mat_r[, it_mat], irtmodel = "PCM",
                    formulaY = ~ kobieta,
@@ -310,6 +312,7 @@ mat_mod0 = tam.mml(mat_r[, it_mat], irtmodel = "PCM",
                                   progress = FALSE))
 ```
 
+### Dopasowanie modelu
 
 ```{r, results = "hide"}
 # dopasowanie zadań
@@ -320,6 +323,7 @@ mat_mod0$xsi$parameter = rownames(mat_mod0$xsi)
 mat_mod0_fit = merge(mat_mod0$xsi, mat_fit0)
 ```
 
+Poniżej znajdują się oszacowane parametry zadań oraz miary dopasowania.
 
 ```{r}
 round_df(mat_mod0_fit[, grep("param|xsi|fit$", names(mat_mod0_fit))], 3)
@@ -331,14 +335,234 @@ Wykres dla miar dopasowania.
 fitplot(mat_mod0_fit)
 ```
 
+Zadanie MA\_20 miało trochę niższą od przewidywanej dyskryminację już na etapie oddzielnego skalowania TOS6. Spośród sprawdzianowych zadań matematycznych dwa są potencjalnie problematyczne.
+
+Dla zadania s\_22, wszystkie kategorie punktowe wykazują niedopasowanie. Zadanie s\_18 z kolei ma wyższą od przewidywanej dyskryminację. Przyjrzyjmy się krzywym charakterystycznym dla tych zadań.
 
 ```{r, results = "hide", dev.args = list(pointsize = 8)}
-plot(mat_mod0, grep("s_22", mat_mod0$item$item), ngroups = 7,
+plot(mat_mod0, grep("s_18|s_22", mat_mod0$item$item), ngroups = 7,
      type = "items", export = FALSE, package = "graphics")
+```
+
+Wyższa dyskryminacja dla zadania s\_18 może być symptomem złamania założenia o lokalnej niezależności wynikającym z faktu, że zadania s\_17-s\_20 odwołują się do tego samego trzonu (tesktu i tabeli). W kolejnym kroku dopasowano model, w którym zamiast wyników dla poszczególnych zadań wykorzystano sumę punktów.
+
+## Model z sumą dla zadań s\_17-s\_20
+
+```{r}
+mat_r$s_17_20r = rowSums(mat_r[, grep("s_1[789]|s_20", names(mat_r))])
+
+# wskazanie zadań do skalowania
+it_mat1 = c(it_mat[-grep("s_1[789]|s_20", it_mat)], "s_17_20r")
+```
+
+```{r}
+mat_mod1 = tam.mml(mat_r[, it_mat1], irtmodel = "PCM",
+                   formulaY = ~ kobieta,
+                   dataY = mat_r[, "kobieta", drop = FALSE],
+                   control = list(increment.factor = 1.01,
+                                  progress = FALSE))
+
+```
+
+### Dopasowanie modelu
+
+```{r, results = "hide"}
+# dopasowanie zadań
+mat_fit1 = tam.fit(mat_mod1)$itemfit
+
+# scalenie oszacowań parametrów i dopasowania
+mat_mod1$xsi$parameter = rownames(mat_mod1$xsi)
+mat_mod1_fit = merge(mat_mod1$xsi, mat_fit1)
+```
+
+Poniżej znajdują się oszacowane parametry zadań oraz miary dopasowania.
+
+```{r}
+round_df(mat_mod1_fit[, grep("param|xsi|fit$", names(mat_mod1_fit))], 3)
+```
+
+Wykres dla miar dopasowania.
+
+```{r, fig.keep = 'last'}
+fitplot(mat_mod1_fit)
+```
+
+```{r, results = "hide", dev.args = list(pointsize = 8)}
+plot(mat_mod1, grep("s_17", mat_mod1$item$item), ngroups = 7,
+     type = "items", export = FALSE, package = "graphics")
+```
+
+Suma dla zadań s\_17-s\_20 funkcjonuje odrobinę lepiej niż poszczególne zadania indywidualnie. Kategoria 1 wykazuje jednk podobne niedopasowanie co zadanie s\_18. W związku jednak z faktem, że wspólny trzon dla tych czterech zadań może stanowić problem dla założenia o lokalnej niezależności, a także, że w wyniku połączenia tych zadań skala wyników nie zmieniła się, do dalszych analiz wykorzystano taką wlaśnie skalę.
+
+## Model ze skróconą skalą zadania s\_22
+
+W zadaniu s\_22 mamy do czynienia z kilkoma problemami. Po pierwsze dwie kategorie punktowe prawie nie występują - bardzo niewielu uczniów otrzymało za to zadanie 1 lub 3 punkty. Po drugie, krzywa empiryczna dla kategorii 4 w okolicy 0,5 logita załamuje się i rośnie mniej dynamicznie niż przewiduje to model. Załamanie to powiązane jest z większym niż przewidywanym odsetkiem uczniów o wysokim poziomie umiejętności, którzy otrzymują dwa punkty za to zadanie. Dodatkowo, właśnie w tym zakresie skali umiejętności (0,5-1 logit) ma swoje niewysokie maksimum krzywa empiryczna dla kategorii 3 punkty. W związku z dość dużym niedopasowaniem zadania do modelu Rascha, podjęto próbę skrócenia skali z pięciokategorialnej do trójkategorialnej, próbując jednocześnie zoptymalizować dopasowanie dla nowych kategorii punktowych.
+
+Skalę skrócono poprzez złączenie kategorii 1 i 2 oraz 3 i 4.
+
+```{r}
+# zrekdowanie zadania s_22
+mat_r$s_22r = car::recode(mat_r$s_22, "2 = 1; 3 = 2; 4 = 2")
+# zredefiniowanie zadań do skalowania
+it_mat2 = c(it_mat1[-grep("s_22", it_mat1)], "s_22r")
+
+mat_mod2 = tam.mml(mat_r[, it_mat2], irtmodel = "PCM",
+                   formulaY = ~ kobieta,
+                   dataY = mat_r[, "kobieta", drop = FALSE],
+                   control = list(increment.factor = 1.01,
+                                  progress = TRUE))
+```
+
+### Dopasowanie modelu
+
+```{r, results = "hide"}
+# dopasowanie zadań
+mat_fit2 = tam.fit(mat_mod2)$itemfit
+
+# scalenie oszacowań parametrów i dopasowania
+mat_mod2$xsi$parameter = rownames(mat_mod2$xsi)
+mat_mod2_fit = merge(mat_mod2$xsi, mat_fit2)
+```
+
+Poniżej znajdują się oszacowane parametry zadań oraz miary dopasowania.
+
+```{r}
+round_df(mat_mod2_fit[, grep("param|xsi|fit$", names(mat_mod2_fit))], 3)
+```
+
+Wykres dla miar dopasowania.
+
+```{r, fig.keep = 'last'}
+fitplot(mat_mod2_fit)
+```
+
+```{r, results = "hide", dev.args = list(pointsize = 8)}
+plot(mat_mod2, grep("s_22", mat_mod2$item$item), ngroups = 7,
+     type = "items", export = FALSE, package = "graphics")
+```
+
+Tak zmodyfikowana skala oceny zadania funkcjonuje lepiej niż oryginalna. Jedynie kategoria 0 oraz 1 w zakresie niższych wyników wykazują trochę wyższą niż przewidywana dyskryminację. Dla rozwiązania tego problemu przetestowano również model, w którym oryginalna kategoria 1 była połączona z kategorią 0. Niestety nie poprawiło to tego aspektu zadania. Na potrzeby dalszych analiz zadanie s\_22, analizowane będzie na skróconej skali.
+
+## Analiza DIF na płeć
+
+W następnym kroku sprawdzono zadania pod kątem zróżnicowanego funkcjonowania zadań ze względu na płeć.
+
+```{r}
+mat_mod3 = tam.mml.mfr(mat_r[, it_mat2],
+      formulaA = ~ item + item:step + kobieta + kobieta:item + kobieta:item:step,
+      facets = mat_r[, "kobieta", drop = FALSE],
+      control = list(increment.factor = 1.03,
+                     fac.oldxsi = 0.06,
+                     progress = TRUE))
+```
+
+Parametry, które wykazują DIF na płeć (bezwzględna różnica w trudności > 0.4; kobieta0 = chłopiec).
+
+```{r}
+dif_params = grepl(":kobieta", rownames(mat_mod3$xsi)) & mat_mod3$xsi$xsi < 98
+round_df(mat_mod3$xsi[dif_params & abs(mat_mod3$xsi$xsi) > 0.2 , ], 3)
+```
+
+Poza zadaniami TOS6, które wykazywały wcześniej symptomy zróznicowanego funkcjonowania, pojawia się jedno zadanie ze sprawdzianu, s\_11. Zadanie to dotyczy wyznaczania wagi zawartości pojemnika, uwzględniwszy wagę samego pojemnika. Okazuje się, że zadanie to jest łatwiejsze dla chłopców niż dla dziewczynek. Spójrzmy na odsetki poszczególnych odpowiedzi udzielanych przez uczniów w podziale na płeć.
+
+```{r}
+mat_mod3_pv = tam.pv(mat_mod3)$pv
+mat_ctt3 = tam.ctt(mat[, it_mat], pvscores = mat_mod3_pv[, -1],
+                   group = mat$kobieta)
+# chłopcy
+print_ctt(mat_ctt3, "s_11", group = 0)
+# dziewczynki
+print_ctt(mat_ctt3, "s_11", group = 1)
+
+# chłopcy
+plotctt(mat[mat$kobieta == 0, "s_11", drop = FALSE],
+        theta = mat_mod3_pv[mat$kobieta == 0, 2],
+        Ncuts = 7)
+# dziewczynki
+plotctt(mat[mat$kobieta == 1, "s_11", drop = FALSE],
+        theta = mat_mod3_pv[mat$kobieta == 1, 2],
+        Ncuts = 7)
+```
+
+Analiza treściowa nie pozwoliła na stwierdzenie specyficznego dla płci źródła przewagi chłopców w zadaniu s\_11. W związku z tym zadanie pozostawiono bez zmian.
+
+Po analizie zróżnicowanego funkcjonowania zadania ze względu na płeć, przystąpiono do wyliczania wyników uczniów.
+
+## Wyliczenie wyników uczniów
+
+Wyliczanie wyników oodbywalo sie w kilku krokach.
+
+1. Wyekstrahowanie parametrów zadań z modelu ostatecznego.
+
+```{r} 
+xsi_fixed_mat = cbind(1:length(mat_mod2$xsi$xsi),
+                     mat_mod2$xsi$xsi)
+```
+
+2. Przekodowanie zadań "nie-zdążonych" (*not reached*) na odpowiedzi błędne.
+
+```{r}
+mat_r2 = recode_back(mat_r, mat, item = "^[KM]")
+mat_r2[mat_r2 == "N"] = 0
+```
+
+3. Policzenie średnich klasowych na podstawie oszacowań EAP z modelu z regrematą latentną na płeć i z parametrami zadań z modelu ostatecznego.
+
+```{r}
+mod_mean = tam.mml(mat_r2[, it_mat1], xsi.fixed = xsi_fixed_mat,
+                   formulaY = ~ kobieta, dataY = mat_r2[, "kobieta", drop = FALSE],
+                   control = list(increment.factor = 1.01,
+                                  progress = FALSE))
+
+# dołączenie oszacowań do uczniów z informacją o klasie i szkole
+osz_ucz = data.frame(mat_r2[, grep("ID_ucz|ID_szk|oddz_6|kobieta",
+                                        names(mat_r2))],
+                     wyn = mod_mean$person$EAP) 
+# policzenie średniej dla klas
+osz_kl_mn = plyr::ddply(osz_ucz, c("ID_szk", "oddz_6"),
+                         plyr::summarize, srednia_kl = mean(wyn))
+# dodanie średniej do zbioru danych
+osz_ucz2 = merge(osz_ucz, osz_kl_mn, all.x = TRUE)
+```
+
+4. Policzenie wyników (EAP oraz 5 PV) w modelu z regrematą latentną na płeć i średnią klasową oraz z parametrami zadań z modelu ostatecznego.
+
+```{r}
+mod_ost_mn = tam.mml(mat_r2[, it_mat1], xsi.fixed = xsi_fixed_mat,
+                     formulaY = ~ kobieta + srednia_kl,
+                     dataY = osz_ucz2[match(osz_ucz2$ID_ucz, mat_r2$ID_ucz), ],
+                     pid = mat_r2$ID_ucz,
+                     control = list(increment.factor = 1.01,
+                                    progress = FALSE))
+
+# policzenie 5 PV
+pv_ucz = tam.pv(mod_ost_mn, 5)$pv
+
+# dołączenie PV do wyników EAP i bł.st.
+wyn_ucz = merge(mod_ost_mn$person, pv_ucz, all.x = TRUE)
+wyn_ucz = wyn_ucz[, -grep("case|pweight", names(wyn_ucz))]
+
+# zmiana nazw zmiennych: EAPy
+zmod_EAP = paste0(names(wyn_ucz)[grep("EAP", names(wyn_ucz))], "_mat")
+names(wyn_ucz)[grep("EAP", names(wyn_ucz))] = zmod_EAP
+
+# zmiana nazw zmiennych: PV
+zmod_PV = gsub(".Dim1", "_mat", names(wyn_ucz)[grep("PV", names(wyn_ucz))])
+names(wyn_ucz)[grep("PV", names(wyn_ucz))] = zmod_PV
+```
+
+Zapisanie zbioru.
+
+```{r, eval = FALSE}
+write.csv2(wyn_ucz, "data/TOS6_Spr_wyniki_mat.csv", row.names = FALSE)
 ```
 
 
 # Czytanie
+
+## Model rozpoznawczy
+
+W skalowaniu wykorzystano ostateczny model ze skalowania TOS6 oraz 10 zrekodowanych zadań ze sprawdzianu. Rekomendacje ze skalowania TOS6 sprowadzały się do usunięcia zadania KCA\_1. Dodatkowo dla zadania MA\_7 wyliczany jest oddzielny parametr trudności dla chłopców i dziewcząt.
 
 ```{r, cache = TRUE}
 czyt_mod0 = tam.mml(czyt_r[, it_czyt], irtmodel = "PCM",
