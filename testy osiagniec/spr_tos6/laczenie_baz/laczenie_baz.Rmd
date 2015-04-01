@@ -373,7 +373,7 @@ sj_r = sj_r[, zmienne_sj]
 
 ```{r}
 it_sj = grep("S", names(sj), value = TRUE)
-it_sj = it_sj[!it_sj %in% c(kotw_sj, "SA_2", "KSA_24")]
+it_sj = it_sj[!it_sj %in% c(kotw_sj, "SA_2", "SA_24")]
 ```
 
 - dodanie zadań sprawdzianowych.

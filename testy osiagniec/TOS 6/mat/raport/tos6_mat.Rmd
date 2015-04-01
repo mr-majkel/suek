@@ -30,7 +30,7 @@ library(reshape2)
 # library(xtable)
 library(plyr)
 
-source("skrypty\\pomocnicze\\difWang.R")
+#source("skrypty\\pomocnicze\\difWang.R")
 source("skrypty\\pomocnicze\\sumPart.R")
 
 # wczytaj dane
@@ -581,7 +581,7 @@ osz_ucz2 = merge(osz_ucz, osz_kl_mn, all.x = TRUE)
 ### Krok czwarty: policzenie wyników z uwzględnieniem średniej klasowej
 mod_ost_mn = tam.mml(mat_all_r3[, items3], xsi.fixed = xsi_fixed,
                  formulaY = ~ kobieta + srednia_kl,
-                 dataY = osz_ucz2[match(osz_ucz2$ID_ucz, mat_all_r3$ID_ucz), ],
+                 dataY = osz_ucz2[match(mat_all_r3$ID_ucz, osz_ucz2$ID_ucz), ],
                  pid = mat_all_r3$ID_ucz)
 
 # policzenie 5 PV
@@ -743,7 +743,7 @@ osz_ucz2 = merge(osz_ucz, osz_kl_mn, all.x = TRUE)
 ### Krok czwarty: policzenie wyników z uwzględnieniem średniej klasowej
 mod_ost_mn = tam.mml(mat_all_r3[, items3], xsi.fixed = xsi_fixed,
                  formulaY = ~ kobieta + srednia_kl,
-                 dataY = osz_ucz2[match(osz_ucz2$ID_ucz, mat_all_r3$ID_ucz), ],
+                 dataY = osz_ucz2[match(mat_all_r3$ID_ucz, osz_ucz2$ID_ucz), ],
                  pid = mat_all_r3$ID_ucz)
 
 # policzenie 5 PV

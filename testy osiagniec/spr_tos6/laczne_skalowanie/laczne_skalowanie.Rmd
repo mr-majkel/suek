@@ -9,6 +9,8 @@ output:
 lang: polish
 ---
 
+\newpage
+
 # Wprowadzenie
 
 ```{r}
@@ -98,6 +100,11 @@ recode_back = function(df_r, df, item = "^[KC]", code = "N") {
   df_r[, grep(item, names(df_r))] = zad_df_r2
   df_r
 }
+
+# funkcja do standaryzacji na skalę 100/15
+stand = function(x, mean, sd) {
+  ((x - mean)/sd) * 15 + 100
+  }
 
 ```
 
@@ -189,6 +196,9 @@ fit1 = tam.fit(mod1)$itemfit
 # scalenie oszacowań parametrów i dopasowania
 mod1$xsi$parameter = rownames(mod1$xsi)
 mod1_fit = merge(mod1$xsi, fit1)
+```
+
+```{r}
 round_df(mod0_fit[, grep("param|xsi|fit$", names(mod0_fit))], 3)
 ```
 
@@ -251,9 +261,9 @@ sj_r2[sj_r2 == "N"] = 0
 
 ```{r}
 mod_mean = tam.mml(sj_r2[, it_sj1], xsi.fixed = xsi_fixed_sj,
-                   formulaY = ~ kobieta, dataY = sj_r2[, "kobieta", drop = FALSE],
-                   control = list(increment.factor = 1.01,
-                                  progress = FALSE))
+                  formulaY = ~ kobieta, dataY = sj_r2[, "kobieta", drop = FALSE],
+                  control = list(increment.factor = 1.01,
+                                 progress = FALSE))
 
 # dołączenie oszacowań do uczniów z informacją o klasie i szkole
 osz_ucz = data.frame(sj_r2[, grep("ID_ucz|ID_szk|oddz_6|kobieta",
@@ -264,38 +274,55 @@ osz_kl_mn = plyr::ddply(osz_ucz, c("ID_szk", "oddz_6"),
                          plyr::summarize, srednia_kl = mean(wyn))
 # dodanie średniej do zbioru danych
 osz_ucz2 = merge(osz_ucz, osz_kl_mn, all.x = TRUE)
+sj_r3 = merge(sj_r2, osz_kl_mn, all.x = TRUE)
 ```
 
 4. Policzenie wyników (EAP oraz 5 PV) w modelu z regresją latentną na płeć i średnią klasową oraz z parametrami zadań z modelu ostatecznego.
 
-```{r}
-mod_ost_mn = tam.mml(sj_r2[, it_sj1], xsi.fixed = xsi_fixed_sj,
+```{r, results='hide'}
+mod_ost_mn = tam.mml(sj_r3[, it_sj1],  xsi.fixed = xsi_fixed_sj,
                      formulaY = ~ kobieta + srednia_kl,
-                     dataY = osz_ucz2[match(osz_ucz2$ID_ucz, sj_r2$ID_ucz), ],
-                     pid = sj_r2$ID_ucz,
+                     dataY = sj_r3,
+                     pid = sj_r3$ID_ucz,
                      control = list(increment.factor = 1.01,
                                     progress = FALSE))
-
+mod_ost_mn_sj = mod_ost_mn
 # policzenie 5 PV
 pv_ucz = tam.pv(mod_ost_mn, 5)$pv
 
 # dołączenie PV do wyników EAP i bł.st.
-wyn_ucz = merge(mod_ost_mn$person, pv_ucz, all.x = TRUE)
-wyn_ucz = wyn_ucz[, -grep("case|pweight", names(wyn_ucz))]
+wyn_ucz_sj = merge(mod_ost_mn$person, pv_ucz, all.x = TRUE)
+wyn_ucz_sj = wyn_ucz_sj[, -grep("case|pweight", names(wyn_ucz_sj))]
 
 # zmiana nazw zmiennych: EAPy
-zmod_EAP = paste0(names(wyn_ucz)[grep("EAP", names(wyn_ucz))], "_sj")
-names(wyn_ucz)[grep("EAP", names(wyn_ucz))] = zmod_EAP
+zmod_EAP = paste0(names(wyn_ucz_sj)[grep("EAP", names(wyn_ucz_sj))], "_sj")
+names(wyn_ucz_sj)[grep("EAP", names(wyn_ucz_sj))] = zmod_EAP
 
 # zmiana nazw zmiennych: PV
-zmod_PV = gsub(".Dim1", "_sj", names(wyn_ucz)[grep("PV", names(wyn_ucz))])
-names(wyn_ucz)[grep("PV", names(wyn_ucz))] = zmod_PV
+zmod_PV = gsub(".Dim1", "_sj", names(wyn_ucz_sj)[grep("PV", names(wyn_ucz_sj))])
+names(wyn_ucz_sj)[grep("PV", names(wyn_ucz_sj))] = zmod_PV
+
+```
+
+5. Przeniesienie wyników na skalę 100/15.
+
+```{r}
+# wyliczenie średniej i odchylenia standardowego
+wyniki_sj = grep("^EAP|PV", names(wyn_ucz_sj), value = TRUE)
+sj_mean = mean(sapply(wyn_ucz_sj[, wyniki_sj[-c(1, 2)]], mean))
+sj_sd = mean(sapply(wyn_ucz_sj[, wyniki_sj[-c(1, 2)]], sd))
+
+sj_100 = as.data.frame(lapply(wyn_ucz_sj[, wyniki_sj], stand, sj_mean, sj_sd))
+names(sj_100) = paste0("st", names(sj_100))
+
+wyn_ucz_sj = data.frame(wyn_ucz_sj, sj_100)
 ```
 
 Zapisanie zbioru.
 
 ```{r, eval = FALSE}
-write.csv2(wyn_ucz, "data/TOS6_Spr_wyniki_sj.csv", row.names = FALSE)
+write.csv2(wyn_ucz_sj, "data/TOS6_Spr_wyniki_sj.csv", row.names = FALSE)
+write.csv2(sj_r3, "data/TOS6_Spr_baza_skalowanie_sj.csv", row.names = FALSE)
 ```
 
 # Matematyka
@@ -410,7 +437,7 @@ mat_mod2 = tam.mml(mat_r[, it_mat2], irtmodel = "PCM",
                    formulaY = ~ kobieta,
                    dataY = mat_r[, "kobieta", drop = FALSE],
                    control = list(increment.factor = 1.01,
-                                  progress = TRUE))
+                                  progress = FALSE))
 ```
 
 ### Dopasowanie modelu
@@ -448,12 +475,14 @@ Tak zmodyfikowana skala oceny zadania funkcjonuje lepiej niż oryginalna. Jedyni
 W następnym kroku sprawdzono zadania pod kątem zróżnicowanego funkcjonowania zadań ze względu na płeć.
 
 ```{r}
-mat_mod3 = tam.mml.mfr(mat_r[, it_mat2],
+# zastapienie definicji zadań rozpłciowionych
+it_mat3 = c(it_mat2[-grep("MA_7", it_mat2)], "MA_7")
+mat_mod3 = tam.mml.mfr(mat_r[, it_mat3],
       formulaA = ~ item + item:step + kobieta + kobieta:item + kobieta:item:step,
       facets = mat_r[, "kobieta", drop = FALSE],
       control = list(increment.factor = 1.03,
                      fac.oldxsi = 0.06,
-                     progress = TRUE))
+                     progress = FALSE))
 ```
 
 Parametry, które wykazują DIF na płeć (bezwzględna różnica w trudności > 0.4; kobieta0 = chłopiec).
@@ -465,14 +494,17 @@ round_df(mat_mod3$xsi[dif_params & abs(mat_mod3$xsi$xsi) > 0.2 , ], 3)
 
 Poza zadaniami TOS6, które wykazywały wcześniej symptomy zróznicowanego funkcjonowania, pojawia się jedno zadanie ze sprawdzianu, s\_11. Zadanie to dotyczy wyznaczania wagi zawartości pojemnika, uwzględniwszy wagę samego pojemnika. Okazuje się, że zadanie to jest łatwiejsze dla chłopców niż dla dziewczynek. Spójrzmy na odsetki poszczególnych odpowiedzi udzielanych przez uczniów w podziale na płeć.
 
-```{r}
+```{r, results = 'hide', warning = FALSE}
 mat_mod3_pv = tam.pv(mat_mod3)$pv
 mat_ctt3 = tam.ctt(mat[, it_mat], pvscores = mat_mod3_pv[, -1],
                    group = mat$kobieta)
+```
+
+```{r}
 # chłopcy
-print_ctt(mat_ctt3, "s_11", group = 0)
+round_df(print_ctt(mat_ctt3, "s_11", group = 0), 3)
 # dziewczynki
-print_ctt(mat_ctt3, "s_11", group = 1)
+round_df(print_ctt(mat_ctt3, "s_11", group = 1), 3)
 
 # chłopcy
 plotctt(mat[mat$kobieta == 0, "s_11", drop = FALSE],
@@ -509,8 +541,9 @@ mat_r2[mat_r2 == "N"] = 0
 3. Policzenie średnich klasowych na podstawie oszacowań EAP z modelu z regrematą latentną na płeć i z parametrami zadań z modelu ostatecznego.
 
 ```{r}
-mod_mean = tam.mml(mat_r2[, it_mat1], xsi.fixed = xsi_fixed_mat,
-                   formulaY = ~ kobieta, dataY = mat_r2[, "kobieta", drop = FALSE],
+mod_mean = tam.mml(mat_r2[, it_mat2], xsi.fixed = xsi_fixed_mat,
+                   formulaY = ~ kobieta,
+                   dataY = mat_r2[, "kobieta", drop = FALSE],
                    control = list(increment.factor = 1.01,
                                   progress = FALSE))
 
@@ -523,38 +556,55 @@ osz_kl_mn = plyr::ddply(osz_ucz, c("ID_szk", "oddz_6"),
                          plyr::summarize, srednia_kl = mean(wyn))
 # dodanie średniej do zbioru danych
 osz_ucz2 = merge(osz_ucz, osz_kl_mn, all.x = TRUE)
+mat_r3 = merge(mat_r2, osz_kl_mn, all.x = TRUE)
 ```
 
 4. Policzenie wyników (EAP oraz 5 PV) w modelu z regrematą latentną na płeć i średnią klasową oraz z parametrami zadań z modelu ostatecznego.
 
-```{r}
-mod_ost_mn = tam.mml(mat_r2[, it_mat1], xsi.fixed = xsi_fixed_mat,
+```{r, , results='hide'}
+mod_ost_mn = tam.mml(mat_r3[, it_mat2], xsi.fixed = xsi_fixed_mat,
                      formulaY = ~ kobieta + srednia_kl,
-                     dataY = osz_ucz2[match(osz_ucz2$ID_ucz, mat_r2$ID_ucz), ],
-                     pid = mat_r2$ID_ucz,
+                     dataY = mat_r3,
+                     pid = mat_r3$ID_ucz,
                      control = list(increment.factor = 1.01,
                                     progress = FALSE))
-
+mod_ost_mn_mat = mod_ost_mn
 # policzenie 5 PV
 pv_ucz = tam.pv(mod_ost_mn, 5)$pv
 
 # dołączenie PV do wyników EAP i bł.st.
-wyn_ucz = merge(mod_ost_mn$person, pv_ucz, all.x = TRUE)
-wyn_ucz = wyn_ucz[, -grep("case|pweight", names(wyn_ucz))]
+wyn_ucz_mat = merge(mod_ost_mn$person, pv_ucz, all.x = TRUE)
+wyn_ucz_mat = wyn_ucz_mat[, -grep("case|pweight", names(wyn_ucz_mat))]
 
 # zmiana nazw zmiennych: EAPy
-zmod_EAP = paste0(names(wyn_ucz)[grep("EAP", names(wyn_ucz))], "_mat")
-names(wyn_ucz)[grep("EAP", names(wyn_ucz))] = zmod_EAP
+zmod_EAP = paste0(names(wyn_ucz_mat)[grep("EAP", names(wyn_ucz_mat))], "_mat")
+names(wyn_ucz_mat)[grep("EAP", names(wyn_ucz_mat))] = zmod_EAP
 
 # zmiana nazw zmiennych: PV
-zmod_PV = gsub(".Dim1", "_mat", names(wyn_ucz)[grep("PV", names(wyn_ucz))])
-names(wyn_ucz)[grep("PV", names(wyn_ucz))] = zmod_PV
+zmod_PV = gsub(".Dim1", "_mat",
+               names(wyn_ucz_mat)[grep("PV", names(wyn_ucz_mat))])
+names(wyn_ucz_mat)[grep("PV", names(wyn_ucz_mat))] = zmod_PV
+```
+
+5. Przeniesienie wyników na skalę 100/15.
+
+```{r}
+# wyliczenie średniej i odchylenia standardowego
+wyniki_mat = grep("^EAP|PV", names(wyn_ucz_mat), value = TRUE)
+mat_mean = mean(sapply(wyn_ucz_mat[, wyniki_mat[-c(1, 2)]], mean))
+mat_sd = mean(sapply(wyn_ucz_mat[, wyniki_mat[-c(1, 2)]], sd))
+
+mat_100 = as.data.frame(lapply(wyn_ucz_mat[, wyniki_mat], stand, mat_mean, mat_sd))
+names(mat_100) = paste0("st", names(mat_100))
+
+wyn_ucz_mat = data.frame(wyn_ucz_mat, mat_100)
 ```
 
 Zapisanie zbioru.
 
 ```{r, eval = FALSE}
-write.csv2(wyn_ucz, "data/TOS6_Spr_wyniki_mat.csv", row.names = FALSE)
+write.csv2(wyn_ucz_mat, "data/TOS6_Spr_wyniki_mat.csv", row.names = FALSE)
+write.csv2(mat_r3, "data/TOS6_Spr_baza_skalowanie_mat.csv", row.names = FALSE)
 ```
 
 
@@ -562,7 +612,7 @@ write.csv2(wyn_ucz, "data/TOS6_Spr_wyniki_mat.csv", row.names = FALSE)
 
 ## Model rozpoznawczy
 
-W skalowaniu wykorzystano ostateczny model ze skalowania TOS6 oraz 10 zrekodowanych zadań ze sprawdzianu. Rekomendacje ze skalowania TOS6 sprowadzały się do usunięcia zadania KCA\_1. Dodatkowo dla zadania MA\_7 wyliczany jest oddzielny parametr trudności dla chłopców i dziewcząt.
+W skalowaniu wykorzystano ostateczny model ze skalowania TOS6 oraz 10 zrekodowanych zadań ze sprawdzianu. Rekomendacje ze skalowania TOS6 sprowadzały się do usunięcia zadania KCA\_1. Dodatkowo dla zadania CB\_13 wyliczany jest oddzielny parametr trudności dla chłopców i dziewcząt.
 
 ```{r, cache = TRUE}
 czyt_mod0 = tam.mml(czyt_r[, it_czyt], irtmodel = "PCM",
@@ -592,10 +642,309 @@ Wykres dla miar dopasowania.
 fitplot(czyt_mod0_fit)
 ```
 
-```{r, results = "hide", fig.keep = "last", dev.args = list(pointsize = 8)}
-plot(czyt_mod0, grep("KCA_5", czyt_mod0$item$item), ngroups = 7,
-     type = "items", export = FALSE, package = "graphics")
+Wszystkie zadania ze sprawdzianu wykazują dobre dopasowanie do modelu Rascha. Dwa zadania z TOS6, które wykazują gorsze dopasowanie, funkcjonują podobnie jak podczas oddzielnego skalowania TOS6. W związku z tym, można przejść do sprawdzania zróżnicowanego funkcjonowania zadań ze względu na płeć.
+
+## Analiza DIF na płeć
+
+W następnym kroku sprawdzono zadania pod kątem zróżnicowanego funkcjonowania zadań ze względu na płeć.
+
+```{r}
+it_czyt1 = c(it_czyt[-grep("CB_13", it_czyt)], "CB_13")
+czyt_mod1 = tam.mml.mfr(czyt_r[, it_czyt1],
+      formulaA = ~ item + item:step + kobieta + kobieta:item + kobieta:item:step,
+      facets = czyt_r[, "kobieta", drop = FALSE],
+      control = list(increment.factor = 1.03,
+                     fac.oldxsi = 0.06,
+                     progress = FALSE))
+```
+
+Parametry, które wykazują DIF na płeć (bezwzględna różnica w trudności > 0.4; kobieta0 = chłopiec).
+
+```{r}
+dif_params = grepl(":kobieta", rownames(czyt_mod1$xsi)) & czyt_mod1$xsi$xsi < 98
+round_df(czyt_mod1$xsi[dif_params & abs(czyt_mod1$xsi$xsi) > 0.2 , ], 3)
+```
+
+Zadanie CB\_13 zostało rozpłciowione na etapie skalowania TOS6. Spośród zadań ze sprawdzianu dwa zadania, s\_2 i s\_3, wykazują symptomy zróżnicowanego funkcjonowania ze względu na płeć. Biorąc pod uwagę dużą oszacowaną przewagę dziewczynek (średni poziom umiejętności dziewcząt to `r round(czyt_mod0$beta[2], 3)`, w porównaniu do 0 dla chłopców), efekty DIF należy interpretować, przy efektach ujemnych, jako mniejszą od przewidywanej przewagę dziewczynek (odwrotnie przy efektach dodatnich). Rzućmy okiem na odsetki odpowiedzi w podziale na płeć dla obu tych zadań.
+
+```{r, results='hide', warning = FALSE}
+str(czyt_mod0$beta)
+czyt_mod1_pv = tam.pv(czyt_mod1)$pv
+czyt_ctt1 = tam.ctt(czyt[, it_czyt], pvscores = czyt_mod1_pv[, -1],
+                   group = czyt$kobieta)
+```
+
+- Zadanie s\_2
+
+```{r}
+# chłopcy
+round_df(print_ctt(czyt_ctt1, "s_2", group = 0), 3)
+# dziewczynki
+round_df(print_ctt(czyt_ctt1, "s_2", group = 1), 3)
+```
+
+- Zadanie s\_3
+
+```{r}
+# chłopcy
+round_df(print_ctt(czyt_ctt1, "s_3", group = 0), 3)
+# dziewczynki
+round_df(print_ctt(czyt_ctt1, "s_3", group = 1), 3)
+```
+
+Jak widać, trochę wbrew ogólnej prawidłowości, chłopcy radzą sobie porównywalnie do dziewczynek w tych zadaniach. Istnieje możliwość, że jest to skutek doboru tekstu (techniczny, o wynalazku) lub zwiększonej motywacji testowej. W związku z tym, postanowiono wyliczyć parametry dla tych zadań oddzielnie dla chłopców i dziewcząt.
+
+## Model z parametrami zadań s\_2 i s\_3 oszacowanymi oddzielnie dla chłopców i dziewcząt
+
+```{r}
+# rozpłciowienie zadania s_2
+# baza nierekodowana
+czyt$s_2k = czyt$s_2
+czyt$s_2m = czyt$s_2
+
+czyt[czyt$kobieta == 0, "s_2k"] = NA
+czyt[czyt$kobieta == 1, "s_2m"] = NA
+
+# baza rekodowana
+czyt_r = czyt_r
+czyt_r$s_2k = czyt_r$s_2
+czyt_r$s_2m = czyt_r$s_2
+
+czyt_r[czyt_r$kobieta == 0, "s_2k"] = NA
+czyt_r[czyt_r$kobieta == 1, "s_2m"] = NA
+
+# rozpłciowienie zadania s_3
+# baza nierekodowana
+czyt$s_3k = czyt$s_3
+czyt$s_3m = czyt$s_3
+
+czyt[czyt$kobieta == 0, "s_3k"] = NA
+czyt[czyt$kobieta == 1, "s_3m"] = NA
+
+# baza rekodowana
+czyt_r = czyt_r
+czyt_r$s_3k = czyt_r$s_3
+czyt_r$s_3m = czyt_r$s_3
+
+czyt_r[czyt_r$kobieta == 0, "s_3k"] = NA
+czyt_r[czyt_r$kobieta == 1, "s_3m"] = NA
+
+# zmodyfikowanie listy zadań do skalowania
+it_czyt2 = c(it_czyt[-grep("s_[23]", it_czyt)], "s_2k", "s_2m", "s_3k", "s_3m")
+summary(czyt_r[, c("s_2", "s_3", "s_2k", "s_2m", "s_3k", "s_3m")])
+```
+
+Policzenie modelu
+
+```{r, cache = TRUE}
+czyt_mod2 = tam.mml(czyt_r[, it_czyt2], irtmodel = "PCM",
+                   formulaY = ~ kobieta,
+                   dataY = czyt_r[, "kobieta", drop = FALSE],
+                   control = list(increment.factor = 1.01,
+                                  progress = FALSE))
 ```
 
 
+```{r, results = "hide"}
+# dopasowanie zadań
+czyt_fit2 = tam.fit(czyt_mod2)$itemfit
 
+# scalenie oszacowań parametrów i dopasowania
+czyt_mod2$xsi$parameter = rownames(czyt_mod2$xsi)
+czyt_mod2_fit = merge(czyt_mod2$xsi, czyt_fit2)
+```
+
+Dopasowanie modelu.
+
+```{r}
+round_df(czyt_mod2_fit[, grep("param|xsi|fit$", names(czyt_mod2_fit))], 3)
+```
+
+## Wyliczenie wyników uczniów
+
+Wyliczanie wyników oodbywało sie w kilku krokach.
+
+1. Wyekstrahowanie parametrów zadań z modelu ostatecznego.
+
+```{r} 
+xsi_fixed_czyt = cbind(1:length(czyt_mod2$xsi$xsi),
+                     czyt_mod2$xsi$xsi)
+```
+
+2. Przekodowanie zadań "nie-zdążonych" (*not reached*) na odpowiedzi błędne.
+
+```{r}
+czyt_r2 = recode_back(czyt_r, mat, item = "^[KC]")
+czyt_r2[czyt_r2 == "N"] = 0
+```
+
+3. Policzenie średnich klasowych na podstawie oszacowań EAP z modelu z regrematą latentną na płeć i z parametrami zadań z modelu ostatecznego.
+
+```{r}
+mod_mean = tam.mml(czyt_r2[, it_czyt2], xsi.fixed = xsi_fixed_czyt,
+                   formulaY = ~ kobieta,
+                   dataY = czyt_r2[, "kobieta", drop = FALSE],
+                   control = list(increment.factor = 1.01,
+                                  progress = FALSE))
+
+# dołączenie oszacowań do uczniów z informacją o klasie i szkole
+osz_ucz = data.frame(czyt_r2[, grep("ID_ucz|ID_szk|oddz_6|kobieta",
+                                        names(czyt_r2))],
+                     wyn = mod_mean$person$EAP)
+# policzenie średniej dla klas
+osz_kl_mn = plyr::ddply(osz_ucz, c("ID_szk", "oddz_6"),
+                         plyr::summarize, srednia_kl = mean(wyn))
+# dodanie średniej do zbioru danych
+osz_ucz2 = merge(osz_ucz, osz_kl_mn, all.x = TRUE)
+czyt_r3 = merge(czyt_r2, osz_kl_mn, all.x = TRUE)
+```
+
+4. Policzenie wyników (EAP oraz 5 PV) w modelu z regrematą latentną na płeć i średnią klasową oraz z parametrami zadań z modelu ostatecznego.
+
+```{r, , results='hide'}
+mod_ost_mn = tam.mml(czyt_r3[, it_czyt2], xsi.fixed = xsi_fixed_czyt,
+                     formulaY = ~ kobieta + srednia_kl,
+                     dataY = czyt_r3,
+                     pid = czyt_r3$ID_ucz,
+                     control = list(increment.factor = 1.01,
+                                    progress = TRUE))
+mod_ost_mn_czyt = mod_ost_mn
+# policzenie 5 PV
+pv_ucz = tam.pv(mod_ost_mn, 5)$pv
+
+# dołączenie PV do wyników EAP i bł.st.
+wyn_ucz_czyt = merge(mod_ost_mn$person, pv_ucz, all.x = TRUE)
+wyn_ucz_czyt = wyn_ucz_czyt[, -grep("case|pweight", names(wyn_ucz_czyt))]
+
+# zmiana nazw zmiennych: EAPy
+zmod_EAP = paste0(names(wyn_ucz_czyt)[grep("EAP", names(wyn_ucz_czyt))], "_czyt")
+names(wyn_ucz_czyt)[grep("EAP", names(wyn_ucz_czyt))] = zmod_EAP
+
+# zmiana nazw zmiennych: PV
+zmod_PV = gsub(".Dim1", "_czyt",
+               names(wyn_ucz_czyt)[grep("PV", names(wyn_ucz_czyt))])
+names(wyn_ucz_czyt)[grep("PV", names(wyn_ucz_czyt))] = zmod_PV
+```
+
+5. Przeniesienie wyników na skalę 100/15.
+
+```{r}
+# wyliczenie średniej i odchylenia standardowego
+wyniki_czyt = grep("^EAP|PV", names(wyn_ucz_czyt), value = TRUE)
+czyt_mean = mean(sapply(wyn_ucz_czyt[, wyniki_czyt[-c(1, 2)]], mean))
+czyt_sd = mean(sapply(wyn_ucz_czyt[, wyniki_czyt[-c(1, 2)]], sd))
+
+czyt_100 = as.data.frame(lapply(wyn_ucz_czyt[, wyniki_czyt],
+                                stand, czyt_mean, czyt_sd))
+names(czyt_100) = paste0("st", names(czyt_100))
+
+wyn_ucz_czyt = data.frame(wyn_ucz_czyt, czyt_100)
+```
+
+Zapisanie zbioru.
+
+```{r, eval = FALSE}
+write.csv2(wyn_ucz_czyt, "data/TOS6_Spr_wyniki_czyt.csv", row.names = FALSE)
+write.csv2(czyt_r3, "data/TOS6_Spr_baza_skalowanie_czyt.csv", row.names = FALSE)
+```
+
+# Podsumowanie ostatecznych modeli
+
+## Świadomość językowa
+
+### Zadania wykorzystane w skalowaniu
+
+```{r}
+it_sj1
+```
+
+### Modyfikacje zadań
+
+- **SA\_2**: zadanie usunięte.
+
+- **SA\_24**: zadanie usunięte.
+
+- **KSA\_18**: skrócona skala oceny (kat. 2 została połaczona z 1).
+
+- **s\_26**: dla kryteriów ocenianych na skalach dłuższych niż zero-jedynkowe, tj. s\_26\_1 (“pisze opowiadanie na zadany temat”; maks. 3 pkt.) oraz s\_26\_3 (“pisze poprawnie pod wzgledem jezykowym”; maks. 2 pkt.), przyznano po jednym punkcie tylko tym uczniom, którzy zdobyli maksymalną liczbą punktów w danym kryterium. W efekcie zadanie oceniane jest na skali od 0 do 5 punktów.
+
+### Parametry zadań
+
+```{r}
+sj_item_par = mod1_fit[, grep("param|xsi|fit$", names(mod1_fit))]
+round_df(sj_item_par, 3)
+```
+
+```{r, eval = FALSE}
+write.csv2(sj_item_par, "data/sj_items.csv", row.names = FALSE)
+```
+
+### Statystyki modelu do wyliczania wyników
+
+```{r}
+sumPart(summary(mod_ost_mn_sj), c(1:6))
+```
+
+## Matematyka
+
+### Zadania wykorzystane w skalowaniu
+
+```{r}
+it_mat2
+```
+
+### Modyfikacje zadań
+
+- **MA\_25**: odpowiedzi B i D uznane za poprawne.
+- **MB\_25**: Zadanie usunięte.
+- **MA\_7**: oddzielny parametr trudności dla chłopców i dziewcząt.
+- **s\_17-s\_20**: W skalowaniu uwzględniona suma punktów za te zadania.
+- **s_22**: kategorie 1 i 2 zrekodowane na 1, kategorie 3 i 4 zrekodowane na 2.
+
+### Parametry zadań
+
+```{r}
+mat_item_par = mat_mod2_fit[, grep("param|xsi|fit$", names(mat_mod2_fit))]
+round_df(mat_item_par, 3)
+```
+
+```{r, eval = FALSE}
+write.csv2(mat_item_par, "data/mat_items.csv", row.names = FALSE)
+```
+
+### Statystyki modelu do wyliczania wyników
+
+```{r}
+sumPart(summary(mod_ost_mn_mat), c(1:6))
+```
+
+## Czytanie
+
+### Zadania wykorzystane w skalowaniu
+
+```{r}
+it_czyt2
+```
+
+### Modyfikacje zadań
+
+- **KCA\_1**: zadanie usunięte.
+- **KCA\_12**: zrekodowanie kategorii 2 na 1.
+- **CB\_13**: oddzielny parametr trudności dla chłopców i dziewcząt.
+
+### Parametry zadań
+
+```{r}
+czyt_item_par = czyt_mod2_fit[, grep("param|xsi|fit$", names(czyt_mod2_fit))]
+round_df(czyt_item_par, 3)
+```
+
+```{r, eval = FALSE}
+write.csv2(czyt_item_par, "data/czyt_items.csv", row.names = FALSE)
+```
+
+### Statystyki modelu do wyliczania wyników
+
+```{r}
+sumPart(summary(mod_ost_mn_czyt), c(1:6))
+```
